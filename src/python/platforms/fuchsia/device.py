@@ -30,6 +30,7 @@ def reset_state():
 
 def run_command(command_line, timeout):
   """Run the desired command on the device."""
+  # TODO: this needs to actually run the SSH command
   # TODO(mbarbella): Implement this.
 
 

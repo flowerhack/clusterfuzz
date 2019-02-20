@@ -272,6 +272,7 @@ def get_additional_command_line_flags(testcase_path):
 def run_testcase(thread_index, file_path, gestures, env_copy):
   """Run a single testcase and return crash results in the crash queue."""
   try:
+    logs.log_warn("TRYING A THING")
     # Update environment with environment copy from parent.
     if env_copy:
       os.environ.update(env_copy)
@@ -426,6 +427,12 @@ def run_testcase_and_return_result_in_queue(crash_queue,
   })
 
   try:
+    logs.log_warn("thread index %s" % str(thread_index))
+    logs.log_warn("file path %s" % str(file_path))
+    logs.log_warn("gestures %s" % str(gestures))
+    logs.log_warn("env_copy %s" % str(env_copy))
+    logs.log_warn("run_testcase %s" % str(run_testcase))
+    logs.log_warn("omg let's go")
     # Run testcase and check whether a crash occurred or not.
     return_code, crash_time, output = run_testcase(thread_index, file_path,
                                                    gestures, env_copy)

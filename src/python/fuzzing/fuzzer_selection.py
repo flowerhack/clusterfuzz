@@ -80,6 +80,9 @@ def get_fuzz_task_payload(platform=None):
     platform = queue_override if queue_override else environment.platform()
 
   query = data_types.FuzzerJob.query()
+  logs.log_error('Here is all the fuzzery jobs for ' + platform + ":")
+  for item in query:
+    logs.log_error(str(item))
   query = query.filter(data_types.FuzzerJob.platform == platform)
 
   mappings = list(ndb_utils.get_all_from_query(query))

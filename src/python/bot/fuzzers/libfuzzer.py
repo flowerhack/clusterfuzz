@@ -19,10 +19,13 @@ import shutil
 
 import engine_common
 
+from metrics import logs
+
 from system import environment
 from system import minijail
 from system import new_process
 from system import shell
+from google_cloud_utils import storage
 
 from libFuzzer import constants
 
@@ -318,6 +321,59 @@ class LibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
                                 artifact_prefix, additional_args)
 
+class FuchsiaQemuLibFuzzerRunner(LibFuzzerCommon):
+  """libFuzzer runner (when Fuchsia is the target platform)."""
+  def __init__(self, executable_path, default_args=None):
+    """Inits the FuchsiaQemuLibFuzzerRunner.
+
+    Sets up prerequisites for the QEMU instance we'll be fuzzing against.
+
+    Args:
+      executable_path: Path of the fuzzer to run.
+      default_args: Default arguments to always pass to the fuzzer.
+    """
+    fuchsia_gcs_path = "https://storage.googleapis.com/fuchsia_on_clusterfuzz_resources_v1/";
+    local_path = os.getcwd();
+    qemu = "qemu-system-x86_64"
+    qemu_kernel = "multiboot.bin"
+    drive_file = "fuchsia.qcow2"
+    initrd = "fuchsia-ssh.zbi"
+    auth_key = "pkey"
+    self.identity_file_path = local_path + auth_key
+
+    if not storage.exists(fuchsia_gcs_path):
+      raise LibFuzzerException("Cannot find Fuchsia GCS bucket")
+
+    # Download everything necessary to run Fuchsia via QEMU.
+    if not storage.copy_file_from(fuchsia_gcs_path + qemu, local_path + qemu):
+      raise LibFuzzerException("Cannot copy " + qemu + " from Fuchsia GCS bucket")
+    if not storage.copy_file_from(fuchsia_gcs_path + qemu_kernel, local_path + qemu_kernel):
+      raise LibFuzzerException("Cannot copy " + qemu_kernel + " from Fuchsia GCS bucket")
+    if not storage.copy_file_from(fuchsia_gcs_path + drive_file, local_path + drive_file):
+      raise LibFuzzerException("Cannot copy " + drive_file + " from Fuchsia GCS bucket")
+    if not storage.copy_file_from(fuchsia_gcs_path + initrd, local_path + initrd):
+      raise LibFuzzerException("Cannot copy " + initrd + " from Fuchsia GCS bucket")
+
+    # This key is generated per Fuchsia checkout and not related to any other keys.
+    # If Fuchsia is rebuilt & reuploaded from a different checkout, the key must be reuploaded too.
+    if not storage.copy_file_from(fuchsia_gcs_path + auth_key, identity_file_path):
+      raise LibFuzzerException("Cannot copy " + auth_key + " from Fuchsia GCS bucket")
+
+    self.qemu_base_command = constants.FUCHSIA_QEMU_COMMAND_TEMPLATE.format(qemu=qemu, qemu_kernel=qemu_kernel, drive_file=drive_file, initrd=initrd)
+
+    super(FuchsiaQemuLibFuzzerRunner, self).__init__(
+      executable_path=executable_path, default_args=default_args)
+
+  def get_command(self, additional_args=None):
+    """Process.get_command override."""
+    # TODO: before we actually run this fuzzer anywhere, we'll want the command to dynamically pick
+    # an actual fuzzer to run, e.g. "ssh foo fuzz some_fuzzer."
+    # But, while we're just setting up the end-to-end infra, let's just test a basic echo command
+    # ane make sure that works too.
+    command = "echo 'This is a long test string.'"
+    base_command = constants.FUCHSIA_SSH_COMMAND_TEMPLATE.format(identity_file_path, command)
+    return self.qemu_base_command + base_command
+
 
 class MinijailLibFuzzerRunner(engine_common.MinijailEngineFuzzerRunner,
                               LibFuzzerCommon):
@@ -458,6 +514,7 @@ class MinijailLibFuzzerRunner(engine_common.MinijailEngineFuzzerRunner,
 
 def get_runner(fuzzer_path, temp_dir=None):
   """Get a libfuzzer runner."""
+  logs.log_warn("in get_runner")
   use_minijail = environment.get_value('USE_MINIJAIL')
   build_dir = environment.get_value('BUILD_DIR')
   if use_minijail:
@@ -497,7 +554,11 @@ def get_runner(fuzzer_path, temp_dir=None):
       shutil.copy(os.path.realpath('/bin/sh'), os.path.join(minijail_bin, 'sh'))
 
     runner = MinijailLibFuzzerRunner(fuzzer_path, minijail_chroot)
+  elif environment.platform() == "FUCHSIA":
+    logs.log_warn('Running with Fuchsia.')
+    runner = FuchsiaQemuLibFuzzerRunner(fuzzer_path)
   else:
+    logs.log_warn('Running with not-Fuchsia.')
     runner = LibFuzzerRunner(fuzzer_path)
 
   return runner
