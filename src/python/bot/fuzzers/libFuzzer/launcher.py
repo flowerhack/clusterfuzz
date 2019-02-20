@@ -646,6 +646,7 @@ def get_printable_command(command, fuzzer_path, use_minijail):
 
 def main(argv):
   """Run libFuzzer as specified by argv."""
+  logs.log_warn("running libfuzzer")
   atexit.register(fuzzer_utils.cleanup)
 
   # Initialize variables.
@@ -682,8 +683,11 @@ def main(argv):
 
   # Setup minijail if needed.
   use_minijail = environment.get_value('USE_MINIJAIL')
+  logs.log_warn("getting a runner")
   runner = libfuzzer.get_runner(
       fuzzer_path, temp_dir=fuzzer_utils.get_temp_dir())
+  logs.log_warn("what")
+  logs.log_warn("runner type: %s" % str(type(runner)))
 
   if use_minijail:
     minijail_chroot = runner.chroot
@@ -788,6 +792,7 @@ def main(argv):
     fuzzing_strategies.append(strategy.VALUE_PROFILE_STRATEGY)
 
   # Execute the fuzzer binary with original arguments.
+  # this is where we want the SSH command
   fuzz_result = runner.fuzz(
       corpus_directories,
       fuzz_timeout=fuzz_timeout,
@@ -924,8 +929,9 @@ def main(argv):
   parsed_stats.update(stat_overrides)
 
   # Dump stats data for further uploading to BigQuery.
-  engine_common.dump_big_query_data(parsed_stats, testcase_file_path,
-                                    LIBFUZZER_PREFIX, fuzzer_name, command)
+  if environment.platform() != "FUCHSIA":
+    engine_common.dump_big_query_data(parsed_stats, testcase_file_path,
+                                      LIBFUZZER_PREFIX, fuzzer_name, command)
 
   # Add custom crash state based on fuzzer name (if needed).
   add_custom_crash_state_if_needed(fuzzer_name, log_lines, parsed_stats)

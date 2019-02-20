@@ -121,6 +121,8 @@ def run_process(cmdline,
   """Executes a process with a given command line and other parameters."""
   # FIXME(mbarbella): Using LAUNCHER_PATH here is error prone. It forces us to
   # do certain operations before fuzzer setup (e.g. bad build check).
+  logs.log_warn("we hit run_process")
+  logs.log_warn("run process's command is: %s" % cmdline)
   launcher = environment.get_value('LAUNCHER_PATH')
   if environment.is_trusted_host() and testcase_run and not launcher:
     from bot.untrusted_runner import remote_process_host
@@ -134,6 +136,7 @@ def run_process(cmdline,
   if env_copy:
     os.environ.update(env_copy)
 
+  logs.log_warn("weird resetting of platform")
   # This is used when running scripts on native linux OS and not on the device.
   # E.g. running a fuzzer to generate testcases or launcher script.
   plt = environment.platform()
@@ -150,8 +153,10 @@ def run_process(cmdline,
   if lsan:
     timeout -= LSAN_ANALYSIS_TIME
 
-  if plt == 'FUCHSIA':
-    return fuchsia.device.run_command(cmdline, timeout)
+  #if plt == 'FUCHSIA':
+  #  logs.log_warn("We're gonna run_command fuchsia")
+  #  logs.log_warn("cmdline is %s" % str(cmdline))
+  #  return fuchsia.device.run_command(cmdline, timeout)
 
   # Initialize variables.
   adb_output = None
@@ -164,6 +169,8 @@ def run_process(cmdline,
       environment.get_value('WATCH_FOR_PROCESS_EXIT')
       if plt == 'ANDROID' else True)
   window_list = []
+
+  logs.log_warn("starting gestures")
 
   # Get gesture start time from last element in gesture list.
   gestures = copy.deepcopy(gestures)
@@ -182,6 +189,7 @@ def run_process(cmdline,
     # Run the app.
     adb_output = android.adb.run_adb_command(cmdline, timeout=timeout)
   else:
+    logs.log_warn("about to get command and arguments")
     cmd, args = shell.get_command_and_arguments(cmdline)
 
     process_output = mozprocess.processhandler.StoreOutput()
@@ -250,6 +258,7 @@ def run_process(cmdline,
         break
 
   # Process output based on platform.
+  logs.log_warn("process output")
   if plt == 'ANDROID':
     # Get current log output. If device is in reboot mode, logcat automatically
     # waits for device to be online.

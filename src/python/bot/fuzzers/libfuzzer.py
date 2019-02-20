@@ -16,15 +16,23 @@
 import copy
 import os
 import shutil
+import time
+import subprocess
+
 
 import engine_common
+
+from metrics import logs
 
 from system import environment
 from system import minijail
 from system import new_process
 from system import shell
+from google.cloud import storage
 
 from libFuzzer import constants
+
+from sys import stdin, stdout, stderr
 
 MAX_OUTPUT_LEN = 1 * 1024 * 1024  # 1 MB
 
@@ -120,6 +128,7 @@ class LibFuzzerCommon(object):
     Returns:
       A process.ProcessResult.
     """
+    logs.log_warn("this is normie fuzzer dot exe")
     max_total_time = self.get_max_total_time(fuzz_timeout)
     assert max_total_time > 0
 
@@ -141,13 +150,15 @@ class LibFuzzerCommon(object):
         # '-close_fd_mask=3',
     ])
 
-    additional_args.extend(corpus_directories)
-    return self.run_and_wait(
-        additional_args=additional_args,
-        timeout=fuzz_timeout - self.SIGTERM_WAIT_TIME,
-        terminate_before_kill=True,
-        terminate_wait_time=self.SIGTERM_WAIT_TIME,
-        max_stdout_len=MAX_OUTPUT_LEN)
+    with open("/tmp/fuzzlog", "rw") as f:
+      additional_args.extend(corpus_directories)
+      return self.run_and_wait(
+          additional_args=additional_args,
+          timeout=fuzz_timeout - self.SIGTERM_WAIT_TIME,
+          terminate_before_kill=True,
+          terminate_wait_time=self.SIGTERM_WAIT_TIME,
+          max_stdout_len=MAX_OUTPUT_LEN,
+          stdout=f)
 
   def merge(self,
             corpus_directories,
@@ -311,6 +322,7 @@ class LibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            artifact_prefix=None,
            additional_args=None):
     """LibFuzzerCommon.fuzz override."""
+    logs.log_warn("this is ???? fuzzer dot exe")
     additional_args = copy.copy(additional_args)
     if additional_args is None:
       additional_args = []
@@ -318,6 +330,93 @@ class LibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
                                 artifact_prefix, additional_args)
 
+class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
+  """libFuzzer runner (when Fuchsia is the target platform)."""
+  def __init__(self, executable_path, default_args=None):
+    """Inits the FuchsiaQemuLibFuzzerRunner.
+
+    Sets up prerequisites for the QEMU instance we'll be fuzzing against.
+
+    Args:
+      executable_path: Path of the fuzzer to run.
+      default_args: Default arguments to always pass to the fuzzer.
+    """
+    logs.log_warn("init'ing FuchsiaQemuLibFuzzerRunner")
+    auth_key = "pkey"
+    local_path = os.getcwd();
+    qemu = "qemu-system-x86_64"
+    qemu_kernel = "multiboot.bin"
+    drive_file = "fuchsia.qcow2"
+    initrd = "fuchsia-ssh.zbi"
+    local_path = os.getcwd();
+    self.identity_file_path = local_path + auth_key
+
+
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket("fuchsia_on_clusterfuzz_resources_v1")
+
+    blob = bucket.blob(qemu)
+    blob.download_to_filename(local_path + qemu)
+    blob = bucket.blob(qemu_kernel)
+    blob.download_to_filename(local_path + qemu_kernel)
+    blob = bucket.blob(drive_file)
+    blob.download_to_filename(local_path + drive_file)
+    blob = bucket.blob(initrd)
+    blob.download_to_filename(local_path + initrd)
+    blob = bucket.blob(auth_key)
+    blob.download_to_filename(self.identity_file_path)
+
+    # run qemu_base_command
+
+    self.qemu_base_command = "timeout 60 " + constants.FUCHSIA_QEMU_COMMAND_TEMPLATE.format(qemu=qemu, qemu_kernel=qemu_kernel, drive_file=drive_file, initrd=initrd)
+    
+    super(FuchsiaQemuLibFuzzerRunner, self).__init__(
+      executable_path=executable_path, default_args=default_args)
+
+  def get_command(self, additional_args=None):
+    """Process.get_command override."""
+    # TODO: before we actually run this fuzzer anywhere, we'll want the command to dynamically pick
+    # an actual fuzzer to run, e.g. "ssh foo fuzz some_fuzzer."
+    # But, while we're just setting up the end-to-end infra, let's just test a basic echo command
+    # ane make sure that works too.
+    logs.log_warn("get_command!!11!")
+    command = "echo 'This is a long test string.'"
+    return ["echo", "the quick brown fox jumped over the lazy dog"] # constants.FUCHSIA_SSH_COMMAND_TEMPLATE.format(identity_file=self.identity_file_path, command=command)
+
+  def fuzz(self,
+           corpus_directories,
+           fuzz_timeout,
+           artifact_prefix=None,
+           additional_args=None):
+    """LibFuzzerCommon.fuzz override."""
+
+    logs.log_warn("we r fuzzing!!11!")
+    # launch in subprocess
+    command = self.qemu_base_command.split(" ")
+    
+    #if stdout == subprocess.PIPE and max_stdout_len:
+    #  stdout = tempfile.TemporaryFile()
+
+    new_process.ChildProcess(
+        subprocess.Popen(
+            command, stdin=stdin, stdout=stdout, stderr=stderr),
+        command,
+        max_stdout_len=10000000,
+        stdout_file=stdout)
+
+    time.sleep(10)
+
+    # wait for qemu to launch
+    return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
+                                artifact_prefix, additional_args)
+    # run the result of self.get_command
+
+    
+  def run_single_testcase(self,
+                        testcase_path,
+                        timeout=None,
+                        additional_args=None):
+    logs.log_warn("run_single_testcase!!11!")
 
 class MinijailLibFuzzerRunner(engine_common.MinijailEngineFuzzerRunner,
                               LibFuzzerCommon):
@@ -385,6 +484,7 @@ class MinijailLibFuzzerRunner(engine_common.MinijailEngineFuzzerRunner,
            artifact_prefix=None,
            additional_args=None):
     """LibFuzzerCommon.fuzz override."""
+    logs.log_warn("this is minijail fuzzer dot exe")
     corpus_directories = self._get_chroot_corpus_paths(corpus_directories)
     return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
                                 artifact_prefix, additional_args)
@@ -458,6 +558,7 @@ class MinijailLibFuzzerRunner(engine_common.MinijailEngineFuzzerRunner,
 
 def get_runner(fuzzer_path, temp_dir=None):
   """Get a libfuzzer runner."""
+  logs.log_warn("in get_runner")
   use_minijail = environment.get_value('USE_MINIJAIL')
   build_dir = environment.get_value('BUILD_DIR')
   if use_minijail:
@@ -497,7 +598,11 @@ def get_runner(fuzzer_path, temp_dir=None):
       shutil.copy(os.path.realpath('/bin/sh'), os.path.join(minijail_bin, 'sh'))
 
     runner = MinijailLibFuzzerRunner(fuzzer_path, minijail_chroot)
+  elif environment.platform() == "FUCHSIA":
+    logs.log_warn('Running with Fuchsia.')
+    runner = FuchsiaQemuLibFuzzerRunner(fuzzer_path)
   else:
+    logs.log_warn('Running with not-Fuchsia.')
     runner = LibFuzzerRunner(fuzzer_path)
 
   return runner
