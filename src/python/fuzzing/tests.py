@@ -272,6 +272,7 @@ def get_additional_command_line_flags(testcase_path):
 def run_testcase(thread_index, file_path, gestures, env_copy):
   """Run a single testcase and return crash results in the crash queue."""
   try:
+    logs.log_warn("we are in def run_testcase")
     # Update environment with environment copy from parent.
     if env_copy:
       os.environ.update(env_copy)
@@ -283,6 +284,7 @@ def run_testcase(thread_index, file_path, gestures, env_copy):
     environment.set_value('PIDS', '[]')
 
     # Get command line options.
+    logs.log_warn("we're calling get_command_line_for_application")
     command = get_command_line_for_application(
         file_path, user_profile_index=thread_index, needs_http=needs_http)
 
@@ -426,6 +428,12 @@ def run_testcase_and_return_result_in_queue(crash_queue,
   })
 
   try:
+    logs.log_warn("thread index %s" % str(thread_index))
+    logs.log_warn("file path %s" % str(file_path))
+    logs.log_warn("gestures %s" % str(gestures))
+    logs.log_warn("env_copy %s" % str(env_copy))
+    logs.log_warn("run_testcase %s" % str(run_testcase))
+    logs.log_warn("omg let's go")
     # Run testcase and check whether a crash occurred or not.
     return_code, crash_time, output = run_testcase(thread_index, file_path,
                                                    gestures, env_copy)
@@ -725,6 +733,7 @@ def get_command_line_for_application(file_to_run='',
       # have app_name == launcher. In this case don't prepend launcher to
       # command - just use app_name.
       if os.path.basename(launcher) != app_name:
+        logs.log_warn("Adding to command: %s" % str(launcher))
         command += launcher + ' '
     elif plt in ['ANDROID', 'FUCHSIA']:
       # Android-specific testcase path fixup for fuzzers that don't rely on
@@ -786,11 +795,15 @@ def get_command_line_for_application(file_to_run='',
 
   # Build the actual command to run now.
   if debugger:
+    logs.log_warn("adding %s" % debugger)
     command += '%s ' % debugger
   if app_path:
+    logs.log_warn("adding %s" % app_path)
     command += app_path
   if all_app_args:
+    logs.log_warn("adding %s" % all_app_args)
     command += ' %s' % all_app_args
+  logs.log_warn("command BEFORE adding a bunch of replaces: %s" % command)
   command = command.replace('%APP_DIR%', app_directory)
   command = command.replace('%CRASH_STACKTRACES_DIR%', crash_stacks_directory)
   command = command.replace('%DEVICE_TESTCASES_DIR%',
@@ -803,6 +816,7 @@ def get_command_line_for_application(file_to_run='',
   command = command.replace('%TESTCASE_HTTP_URL%', testcase_http_url)
   command = command.replace('%TMP_DIR%', temp_directory)
   command = command.replace('%USER_PROFILE_DIR%', user_profile_directory)
+  logs.log_warn("command AFTER adding a bunch of replces: %s" % command)
 
   # Though we attempt to pass all flags that have been used to run html as
   # a test in our content shell job types for backwards compatibility, a
@@ -813,6 +827,7 @@ def get_command_line_for_application(file_to_run='',
   ]
   if (environment.get_value('APP_NAME') in content_shell_app_names and
       environment.get_value('APP_REVISION', 0) >= 558998):
+    logs.log_warn("doing a command replace thingy")
     command = command.replace(' --run-layout-test', '')
 
   if plt == 'ANDROID' and not launcher:

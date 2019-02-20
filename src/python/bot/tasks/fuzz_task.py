@@ -708,6 +708,11 @@ def run_fuzzer(fuzzer, fuzzer_directory, testcase_directory, data_directory,
                testcase_count):
   """Run the fuzzer and generate testcases."""
   # Helper variables.
+  logs.log_warn("fuzzer! %s" % fuzzer)
+  logs.log_warn("fuzzer_directory! %s" % fuzzer_directory)
+  logs.log_warn("testcase_directory! %s" % testcase_directory)
+  logs.log_warn("data_directory! %s" % data_directory)
+  logs.log_warn("testcase_count! %s" % testcase_count)
   error_occurred = False
   fuzzer_revision = fuzzer.revision
   fuzzer_name = fuzzer.name
