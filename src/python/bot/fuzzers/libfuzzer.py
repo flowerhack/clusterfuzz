@@ -151,14 +151,15 @@ class LibFuzzerCommon(object):
     ])
 
     with open("/tmp/fuzzlog", "rw") as f:
-      additional_args.extend(corpus_directories)
-      return self.run_and_wait(
-          additional_args=additional_args,
-          timeout=fuzz_timeout - self.SIGTERM_WAIT_TIME,
-          terminate_before_kill=True,
-          terminate_wait_time=self.SIGTERM_WAIT_TIME,
-          max_stdout_len=MAX_OUTPUT_LEN,
-          stdout=f)
+      with open("/tmp/fuzzlogerr", "w") as ferr:
+        additional_args.extend(corpus_directories)
+        return self.run_and_wait(
+            additional_args=additional_args,
+            timeout=fuzz_timeout - self.SIGTERM_WAIT_TIME,
+            terminate_before_kill=True,
+            terminate_wait_time=self.SIGTERM_WAIT_TIME,
+            max_stdout_len=MAX_OUTPUT_LEN,
+            stdout=f, stderr=ferr)
 
   def merge(self,
             corpus_directories,
@@ -343,12 +344,13 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     """
     logs.log_warn("init'ing FuchsiaQemuLibFuzzerRunner")
     auth_key = "pkey"
-    local_path = os.getcwd();
     qemu = "qemu-system-x86_64"
     qemu_kernel = "multiboot.bin"
     drive_file = "fuchsia.qcow2"
     initrd = "fuchsia-ssh.zbi"
-    local_path = os.getcwd();
+    pcbios = "bios-256k.bin"
+
+    local_path = os.getcwd() + "/";
     self.identity_file_path = local_path + auth_key
 
 
@@ -357,18 +359,28 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
 
     blob = bucket.blob(qemu)
     blob.download_to_filename(local_path + qemu)
+    os.chmod(local_path + qemu, 0777)
     blob = bucket.blob(qemu_kernel)
     blob.download_to_filename(local_path + qemu_kernel)
     blob = bucket.blob(drive_file)
     blob.download_to_filename(local_path + drive_file)
     blob = bucket.blob(initrd)
     blob.download_to_filename(local_path + initrd)
+    blob = bucket.blob(pcbios)
+    blob.download_to_filename(local_path + pcbios)
     blob = bucket.blob(auth_key)
     blob.download_to_filename(self.identity_file_path)
+    os.chmod(self.identity_file_path, 0600)
+
 
     # run qemu_base_command
+    subbed_qemu_base_command = [param.replace("{qemu}", qemu)
+    .replace("{qemu_kernel}", local_path +  qemu_kernel)
+    .replace("{drive_file}", local_path + drive_file)
+    .replace("{initrd}", local_path + initrd)
+    .replace("{bios_path}", local_path) for param in constants.FUCHSIA_QEMU_COMMAND_TEMPLATE]
 
-    self.qemu_base_command = "timeout 60 " + constants.FUCHSIA_QEMU_COMMAND_TEMPLATE.format(qemu=qemu, qemu_kernel=qemu_kernel, drive_file=drive_file, initrd=initrd)
+    self.qemu_base_command = ["timeout", "60"] + subbed_qemu_base_command
     
     super(FuchsiaQemuLibFuzzerRunner, self).__init__(
       executable_path=executable_path, default_args=default_args)
@@ -380,8 +392,10 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     # But, while we're just setting up the end-to-end infra, let's just test a basic echo command
     # ane make sure that works too.
     logs.log_warn("get_command!!11!")
-    command = "echo 'This is a long test string.'"
-    return ["echo", "the quick brown fox jumped over the lazy dog"] # constants.FUCHSIA_SSH_COMMAND_TEMPLATE.format(identity_file=self.identity_file_path, command=command)
+    command = [param.replace("{identity_file}", self.identity_file_path).replace("{command}", "ls") for param in constants.FUCHSIA_SSH_COMMAND_TEMPLATE]
+    logs.log_warn("COMMAND=%s" % ' '.join(command))
+
+    return command
 
   def fuzz(self,
            corpus_directories,
@@ -392,17 +406,20 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
 
     logs.log_warn("we r fuzzing!!11!")
     # launch in subprocess
-    command = self.qemu_base_command.split(" ")
-    
+
+
+    command = self.qemu_base_command
+    logs.log_warn("COMMAND=%s" % ' '.join(command))
     #if stdout == subprocess.PIPE and max_stdout_len:
     #  stdout = tempfile.TemporaryFile()
-
-    new_process.ChildProcess(
-        subprocess.Popen(
-            command, stdin=stdin, stdout=stdout, stderr=stderr),
-        command,
-        max_stdout_len=10000000,
-        stdout_file=stdout)
+    with open("/tmp/qemustdout", "w") as fstdout:
+      with open("/tmp/qemustderr", "w") as ferr:
+        new_process.ChildProcess(
+            subprocess.Popen(
+                command, stdin=stdin, stdout=fstdout, stderr=ferr),
+            command,
+            max_stdout_len=10000000,
+            stdout_file=fstdout)
 
     time.sleep(10)
 

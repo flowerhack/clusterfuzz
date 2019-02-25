@@ -67,13 +67,15 @@ TARGET_ERROR_EXITCODE = 77
 
 # Note: this assumes one QEMU instance per machine for now.
 # To spin up more machines, we'll need to dynamically set host forwarding port, rather than hardcoding it.
-FUCHSIA_QEMU_COMMAND_TEMPLATE = ("{qemu} -m 2048 -nographic -kernel "
-								 "{qemu_kernel} -initrd {initrd} "
-								 "-smp 4 -snapshot -drive file={drive_file},format=qcow2,"
-								 "if=none,id=blobstore,snapshot=on -device virtio-blk-pci,drive=blobstore "
-								 "-serial stdio -monitor none "
-								 "-append 'devmgr.epoch=1550629864  kernel.serial=legacy' "
-								 "-machine q35 -enable-kvm-cpu host,migratable=no "
-								 "-netdev user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::56337-:22 -device e1000,netdev=net0,mac=52:54:00:63:5e:7b")
+FUCHSIA_QEMU_COMMAND_TEMPLATE = ["{qemu}", "-m", "2048", "-nographic", "-kernel",
+								 "{qemu_kernel}", "-initrd", "{initrd}",
+								 "-smp", "4", "-snapshot", "-drive",
+								 "file={drive_file},format=qcow2,if=none,id=blobstore,snapshot=on", "-device",
+								 "virtio-blk-pci,drive=blobstore", "-serial", "stdio", "-monitor", "none",
+								 "-append", "'devmgr.epoch=1550629864  kernel.serial=legacy'",
+								 "-machine", "q35", "-enable-kvm", "-cpu", "host,migratable=no",
+								 "-netdev", "user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::56337-:22",
+								 "-device", "e1000,netdev=net0,mac=52:54:00:63:5e:7b",
+								 "-L", "{bios_path}"]
 
-FUCHSIA_SSH_COMMAND_TEMPLATE = ("ssh -i {identity_file} localhost -p 56337 {command}")
+FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-vvv", "-o", "StrictHostKeyChecking=no", "-i", "{identity_file}", "localhost", "-p", "56337", "{command}"]
