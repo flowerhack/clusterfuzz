@@ -362,8 +362,10 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     os.chmod(local_path + qemu, 0777)
     blob = bucket.blob(qemu_kernel)
     blob.download_to_filename(local_path + qemu_kernel)
+    os.chmod(local_path + qemu_kernel, 0777)
     blob = bucket.blob(drive_file)
     blob.download_to_filename(local_path + drive_file)
+    os.chmod(local_path + drive_file, 0777)
     blob = bucket.blob(initrd)
     blob.download_to_filename(local_path + initrd)
     blob = bucket.blob(pcbios)
@@ -374,13 +376,13 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
 
 
     # run qemu_base_command
-    subbed_qemu_base_command = [param.replace("{qemu}", qemu)
+    subbed_qemu_base_command = [param.replace("{qemu}", local_path + qemu)
     .replace("{qemu_kernel}", local_path +  qemu_kernel)
     .replace("{drive_file}", local_path + drive_file)
     .replace("{initrd}", local_path + initrd)
-    .replace("{bios_path}", local_path) for param in constants.FUCHSIA_QEMU_COMMAND_TEMPLATE]
+    .replace("{bios_path}", local_path + pcbios) for param in constants.FUCHSIA_QEMU_COMMAND_TEMPLATE]
 
-    self.qemu_base_command = ["timeout", "60"] + subbed_qemu_base_command
+    self.qemu_base_command =  subbed_qemu_base_command
     
     super(FuchsiaQemuLibFuzzerRunner, self).__init__(
       executable_path=executable_path, default_args=default_args)
@@ -407,19 +409,13 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     logs.log_warn("we r fuzzing!!11!")
     # launch in subprocess
 
-
     command = self.qemu_base_command
-    logs.log_warn("COMMAND=%s" % ' '.join(command))
+    logs.log_warn("COMMAND TO BE POPEN'D=%s" % ' '.join(command))
     #if stdout == subprocess.PIPE and max_stdout_len:
     #  stdout = tempfile.TemporaryFile()
     with open("/tmp/qemustdout", "w") as fstdout:
       with open("/tmp/qemustderr", "w") as ferr:
-        new_process.ChildProcess(
-            subprocess.Popen(
-                command, stdin=stdin, stdout=fstdout, stderr=ferr),
-            command,
-            max_stdout_len=10000000,
-            stdout_file=fstdout)
+        subprocess.Popen(command, stdout=fstdout, stderr=ferr),
 
     time.sleep(10)
 

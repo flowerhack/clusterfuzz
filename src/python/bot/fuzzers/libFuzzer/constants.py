@@ -70,12 +70,13 @@ TARGET_ERROR_EXITCODE = 77
 FUCHSIA_QEMU_COMMAND_TEMPLATE = ["{qemu}", "-m", "2048", "-nographic", "-kernel",
 								 "{qemu_kernel}", "-initrd", "{initrd}",
 								 "-smp", "4", "-snapshot", "-drive",
-								 "file={drive_file},format=qcow2,if=none,id=blobstore,snapshot=on", "-device",
-								 "virtio-blk-pci,drive=blobstore", "-serial", "stdio", "-monitor", "none",
-								 "-append", "'devmgr.epoch=1550629864  kernel.serial=legacy'",
+								 "file={drive_file},format=qcow2,if=none,id=blobstore,snapshot=on", 
+								 "-bios", "{bios_path}",
+								 "-device", "virtio-blk-pci,drive=blobstore", "-serial", "stdio",
+								 "-monitor", "none", "-append", "'devmgr.epoch=1550629864  kernel.serial=legacy'",
 								 "-machine", "q35", "-enable-kvm", "-cpu", "host,migratable=no",
 								 "-netdev", "user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::56337-:22",
 								 "-device", "e1000,netdev=net0,mac=52:54:00:63:5e:7b",
-								 "-L", "{bios_path}"]
+								 "-L", "/usr/local/google/home/flowerhack/fiestivus_maximus/fuchsia/buildtools/linux-x64/qemu/share/qemu/"]
 
 FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-vvv", "-o", "StrictHostKeyChecking=no", "-i", "{identity_file}", "localhost", "-p", "56337", "{command}"]
