@@ -349,7 +349,6 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     qemu_kernel = "multiboot.bin"
     drive_file = "fuchsia.qcow2"
     initrd = "fuchsia-ssh.zbi"
-    pcbios = "bios-256k.bin"
 
     local_path = os.getcwd() + "/";
     self.identity_file_path = local_path + auth_key
@@ -369,8 +368,6 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     os.chmod(local_path + drive_file, 0777)
     blob = bucket.blob(initrd)
     blob.download_to_filename(local_path + initrd)
-    blob = bucket.blob(pcbios)
-    blob.download_to_filename(local_path + pcbios)
     blob = bucket.blob(auth_key)
     blob.download_to_filename(self.identity_file_path)
     os.chmod(self.identity_file_path, 0600)
