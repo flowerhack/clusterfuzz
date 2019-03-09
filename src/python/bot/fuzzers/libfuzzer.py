@@ -344,7 +344,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     """
     logs.log_warn("init'ing FuchsiaQemuLibFuzzerRunner")
     auth_key = "pkey"
-    qemu = "qemu-system-x86_64"
+    # TODO: implement the qemu download stuff probs via gsutil
+    #qemu = "qemu-system-x86_64"
     qemu_kernel = "multiboot.bin"
     drive_file = "fuchsia.qcow2"
     initrd = "fuchsia-ssh.zbi"
@@ -357,9 +358,9 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     storage_client = storage.Client()
     bucket = storage_client.get_bucket("fuchsia_on_clusterfuzz_resources_v1")
 
-    blob = bucket.blob(qemu)
-    blob.download_to_filename(local_path + qemu)
-    os.chmod(local_path + qemu, 0777)
+    #blob = bucket.blob(qemu)
+    #blob.download_to_filename(local_path + qemu)
+    qemu_path = local_path + ("qemu-for-fuchsia/bin/qemu-system-x86_64")
     blob = bucket.blob(qemu_kernel)
     blob.download_to_filename(local_path + qemu_kernel)
     os.chmod(local_path + qemu_kernel, 0777)
@@ -376,11 +377,10 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
 
 
     # run qemu_base_command
-    subbed_qemu_base_command = [param.replace("{qemu}", local_path + qemu)
+    subbed_qemu_base_command = [param.replace("{qemu}", qemu_path)
     .replace("{qemu_kernel}", local_path +  qemu_kernel)
     .replace("{drive_file}", local_path + drive_file)
-    .replace("{initrd}", local_path + initrd)
-    .replace("{bios_path}", local_path + pcbios) for param in constants.FUCHSIA_QEMU_COMMAND_TEMPLATE]
+    .replace("{initrd}", local_path + initrd) for param in constants.FUCHSIA_QEMU_COMMAND_TEMPLATE]
 
     self.qemu_base_command =  subbed_qemu_base_command
     
@@ -413,6 +413,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     logs.log_warn("COMMAND TO BE POPEN'D=%s" % ' '.join(command))
     #if stdout == subprocess.PIPE and max_stdout_len:
     #  stdout = tempfile.TemporaryFile()
+
     with open("/tmp/qemustdout", "w") as fstdout:
       with open("/tmp/qemustderr", "w") as ferr:
         subprocess.Popen(command, stdout=fstdout, stderr=ferr),

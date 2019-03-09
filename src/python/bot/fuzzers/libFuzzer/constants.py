@@ -67,16 +67,26 @@ TARGET_ERROR_EXITCODE = 77
 
 # Note: this assumes one QEMU instance per machine for now.
 # To spin up more machines, we'll need to dynamically set host forwarding port, rather than hardcoding it.
-FUCHSIA_QEMU_COMMAND_TEMPLATE = ["{qemu}", "-m", "2048", "-nographic", "-kernel",
-								 "{qemu_kernel}", "-initrd", "{initrd}",
-								 "-smp", "4", "-snapshot", "-drive",
-								 "file={drive_file},format=qcow2,if=none,id=blobstore,snapshot=on", 
-								 "-bios", "{bios_path}",
-								 "-device", "virtio-blk-pci,drive=blobstore", "-serial", "stdio",
-								 "-monitor", "none", "-append", "'devmgr.epoch=1550629864  kernel.serial=legacy'",
-								 "-machine", "q35", "-enable-kvm", "-cpu", "host,migratable=no",
-								 "-netdev", "user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::56337-:22",
-								 "-device", "e1000,netdev=net0,mac=52:54:00:63:5e:7b",
-								 "-L", "/usr/local/google/home/flowerhack/fiestivus_maximus/fuchsia/buildtools/linux-x64/qemu/share/qemu/"]
+# QEMU is remarkably unclever in how it decides where to look for BIOSes, hence the -L flag
+# TODO: we should actually check that the -L directories are around
+FUCHSIA_QEMU_COMMAND_TEMPLATE = ["{qemu}",
+								 "-m", "2048",
+								 "-nographic",
+								 "-kernel", "{qemu_kernel}",
+								 "-initrd", "{initrd}",
+								 "-smp", "4",
+								 "-drive", "file={drive_file},format=qcow2,if=none,id=blobstore", 
+								 "-device", "virtio-blk-pci,drive=blobstore",
+								 "-monitor", "none",
+								 "-append", "kernel.serial=legacy",
+								 "-machine", "q35",
+								 "-enable-kvm",
+								 "-cpu", "host,migratable=no",
+								 "-netdev", "type=user,id=net0,hostfwd=tcp::56337-:22,guestfwd=tcp:10.0.2.200:8083-cmd:netcat",
+								 #"-netdev", "type=user,id=net0,hostfwd=tcp::56337-:22,guestfwd=tcp:10.0.2.200:8083-cmd:netcat localhost ${PKG_SRV_PORT}"
+								 #"-netdev", "user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::56338-:22",
+								 "-device", "e1000,netdev=net0,mac=52:54:00:63:5e:7b"]
+								 #"-L", " /usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/qemu-for-fuchsia/share/qemu"]
+								 #"-device", "e1000,netdev=net0,mac=52:54:00:63:5e:7b", "-L", "help"]
 
 FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-vvv", "-o", "StrictHostKeyChecking=no", "-i", "{identity_file}", "localhost", "-p", "56337", "{command}"]
