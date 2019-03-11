@@ -17,6 +17,11 @@ import copy
 import os
 import shutil
 
+import time
+import subprocess
+from metrics import logs
+from sys import stdin, stdout, stderr
+
 import engine_common
 
 from system import environment
@@ -318,6 +323,41 @@ class LibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
                                 artifact_prefix, additional_args)
 
+class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
+  """libFuzzer runner (when Fuchsia is the target platform)."""
+  def __init__(self, executable_path, default_args=None):
+    super(FuchsiaQemuLibFuzzerRunner, self).__init__(
+      executable_path=executable_path, default_args=default_args)
+
+  def get_command(self, additional_args=None):
+    return ["ls", "-a", "-i"]
+
+  def fuzz(self,
+           corpus_directories,
+           fuzz_timeout,
+           artifact_prefix=None,
+           additional_args=None):
+    """LibFuzzerCommon.fuzz override."""
+
+    logs.log_warn("RUNNING QEMU COMMAND")
+    with open("/tmp/qemustdout", "w") as fstdout:
+      with open("/tmp/qemustderr", "w") as ferr:
+        with open ("/dev/null", "r") as fread:
+          subprocess.Popen(['echo', 'hi'], stdout=fstdout, stderr=ferr,)
+          subprocess.Popen(['/usr/local/google/home/flowerhack/lu_tsun/fuchsia/buildtools/linux-x64/qemu/bin/qemu-system-x86_64', '-D', '/tmp/qemustderr', '-m', '2048', '-nographic', '-kernel', '/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/multiboot.bin', '-initrd', '/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/fuchsia-ssh.zbi', '-smp', '4', '-drive', 'file=/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/fuchsia.qcow2,format=qcow2,if=none,id=blobstore', '-device', 'virtio-blk-pci,drive=blobstore', '-monitor', 'none', '-append', 'kernel.serial=legacy TERM=dumb', '-machine', 'q35', '-enable-kvm', '-display', 'none', '-cpu', 'host,migratable=no', '-L', '/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/qemu-for-fuchsia/share/qemu'], stdout=fstdout, stderr=ferr, stdin=fread)
+
+    time.sleep(10000)
+
+    return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
+                                artifact_prefix, additional_args)
+
+    
+  def run_single_testcase(self,
+                        testcase_path,
+                        timeout=None,
+                        additional_args=None):
+    logs.log_warn("run_single_testcase!!11!")
+
 
 class MinijailLibFuzzerRunner(engine_common.MinijailEngineFuzzerRunner,
                               LibFuzzerCommon):
@@ -497,6 +537,9 @@ def get_runner(fuzzer_path, temp_dir=None):
       shutil.copy(os.path.realpath('/bin/sh'), os.path.join(minijail_bin, 'sh'))
 
     runner = MinijailLibFuzzerRunner(fuzzer_path, minijail_chroot)
+  elif environment.platform() == "FUCHSIA":
+    logs.log_warn('Running with Fuchsia.')
+    runner = FuchsiaQemuLibFuzzerRunner(fuzzer_path)
   else:
     runner = LibFuzzerRunner(fuzzer_path)
 
