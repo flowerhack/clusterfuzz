@@ -150,8 +150,8 @@ def run_process(cmdline,
   if lsan:
     timeout -= LSAN_ANALYSIS_TIME
 
-  if plt == 'FUCHSIA':
-    return fuchsia.device.run_command(cmdline, timeout)
+  #if plt == 'FUCHSIA':
+  #  return fuchsia.device.run_command(cmdline, timeout)
 
   # Initialize variables.
   adb_output = None
