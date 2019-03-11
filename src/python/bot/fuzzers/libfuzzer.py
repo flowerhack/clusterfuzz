@@ -345,7 +345,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     logs.log_warn("init'ing FuchsiaQemuLibFuzzerRunner")
     auth_key = "pkey"
     # TODO: implement the qemu download stuff probs via gsutil
-    #qemu = "qemu-system-x86_64"
+    qemu = "qemu-system-x86_64"
     qemu_kernel = "multiboot.bin"
     drive_file = "fuchsia.qcow2"
     initrd = "fuchsia-ssh.zbi"
@@ -359,7 +359,10 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
 
     #blob = bucket.blob(qemu)
     #blob.download_to_filename(local_path + qemu)
-    qemu_path = local_path + ("qemu-for-fuchsia/bin/qemu-system-x86_64")
+
+    #qemu_path = local_path + ("qemu-for-fuchsia/bin/real-qemu-system-x86_64")
+
+    qemu_path="/usr/local/google/home/flowerhack/lu_tsun/fuchsia/buildtools/linux-x64/qemu/bin/qemu-system-x86_64"
     blob = bucket.blob(qemu_kernel)
     blob.download_to_filename(local_path + qemu_kernel)
     os.chmod(local_path + qemu_kernel, 0777)
@@ -407,15 +410,19 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     # launch in subprocess
 
     command = self.qemu_base_command
+    logs.log_warn("COMMAND TO BE POPEN'D=%r" % command)
     logs.log_warn("COMMAND TO BE POPEN'D=%s" % ' '.join(command))
     #if stdout == subprocess.PIPE and max_stdout_len:
     #  stdout = tempfile.TemporaryFile()
 
     with open("/tmp/qemustdout", "w") as fstdout:
       with open("/tmp/qemustderr", "w") as ferr:
-        subprocess.Popen(command, stdout=fstdout, stderr=ferr),
+        with open ("/dev/null", "r") as fread:
+          subprocess.Popen(['/usr/local/google/home/flowerhack/lu_tsun/fuchsia/buildtools/linux-x64/qemu/bin/qemu-system-x86_64', '-m', '2048', '-nographic', '-kernel', '/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/multiboot.bin', '-initrd', '/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/fuchsia-ssh.zbi', '-smp', '4', '-drive', 'file=/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/fuchsia.qcow2,format=qcow2,if=none,id=blobstore', '-device', 'virtio-blk-pci,drive=blobstore', '-monitor', 'none', '-append', 'kernel.serial=legacy TERM=dumb', '-machine', 'q35', '-enable-kvm', '-display', 'none', '-cpu', 'host,migratable=no', '-L', '/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/qemu-for-fuchsia/share/qemu'], stdout=fstdout, stderr=ferr, stdin=fread)
+        #subprocess.Popen(command, stdout=fstdout, stderr=ferr)
+    #subprocess.call(command)
 
-    time.sleep(10)
+    time.sleep(100)
 
     # wait for qemu to launch
     return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,

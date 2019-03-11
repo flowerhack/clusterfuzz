@@ -78,15 +78,16 @@ FUCHSIA_QEMU_COMMAND_TEMPLATE = ["{qemu}",
 								 "-drive", "file={drive_file},format=qcow2,if=none,id=blobstore", 
 								 "-device", "virtio-blk-pci,drive=blobstore",
 								 "-monitor", "none",
-								 "-append", "kernel.serial=legacy",
+								 "-append", 'kernel.serial=legacy TERM=dumb',
 								 "-machine", "q35",
 								 "-enable-kvm",
+								 "-display", "none",
 								 "-cpu", "host,migratable=no",
-								 "-netdev", "type=user,id=net0,hostfwd=tcp::56337-:22,guestfwd=tcp:10.0.2.200:8083-cmd:netcat",
+								 #"-netdev", "type=user,id=net0,hostfwd=tcp::56339-:22,guestfwd=tcp:10.0.2.200:8083-cmd:netcat",
 								 #"-netdev", "type=user,id=net0,hostfwd=tcp::56337-:22,guestfwd=tcp:10.0.2.200:8083-cmd:netcat localhost ${PKG_SRV_PORT}"
 								 #"-netdev", "user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::56338-:22",
-								 "-device", "e1000,netdev=net0,mac=52:54:00:63:5e:7b"]
-								 #"-L", " /usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/qemu-for-fuchsia/share/qemu"]
+								 #"-device", "e1000,netdev=net0,mac=52:54:00:63:5e:7b",
+								 "-L", "/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/qemu-for-fuchsia/share/qemu"]
 								 #"-device", "e1000,netdev=net0,mac=52:54:00:63:5e:7b", "-L", "help"]
 
 FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-vvv", "-o", "StrictHostKeyChecking=no", "-i", "{identity_file}", "localhost", "-p", "56337", "{command}"]
