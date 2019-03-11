@@ -949,6 +949,7 @@ def main(argv):
   parsed_stats.update(stat_overrides)
 
   # Dump stats data for further uploading to BigQuery.
+if environment.platform() != "FUCHSIA":
   engine_common.dump_big_query_data(parsed_stats, testcase_file_path,
                                     LIBFUZZER_PREFIX, fuzzer_name, command)
 

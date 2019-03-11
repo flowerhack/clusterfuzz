@@ -66,3 +66,41 @@ RUNS_TO_REPRODUCE = 100
 
 # libFuzzer's exit code if a bug was found in the target code.
 TARGET_ERROR_EXITCODE = 77
+
+FUCHSIA_QEMU_COMMAND_TEMPLATE = ['{qemu}',
+	'-D',
+	'/tmp/qemustderr',
+	'-m',
+	'2048',
+	'-nographic',
+	'-kernel',
+	'{kernel}',
+	'-initrd', '{initrd}',
+	'-smp',
+	'4',
+	'-drive', 'file={drive},format=qcow2,if=none,id=blobstore',
+	'-device',
+	'virtio-blk-pci,drive=blobstore',
+	'-monitor',
+	'none',
+	'-append',
+	'kernel.serial=legacy TERM=dumb',
+	'-machine',
+	'q35',
+	'-enable-kvm',
+	'-display',
+	'none',
+	'-cpu',
+	'host,migratable=no',
+	'-netdev',
+	'user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::{portnum}-:22',
+	'-device',
+	'e1000,netdev=net0,mac=52:54:00:63:5e:7b',
+	'-L',
+	'{sharefiles}']
+
+FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-i", "{identity_file}", "-o", "StrictHostKeyChecking no", "localhost", "-p", "{portnum}"]
+
+FUCHSIA_BUCKET_NAME = "fuchsia_on_clusterfuzz_resources_v1"
+
+FUCHSIA_GSUTIL_COMMAND = ["gsutil", "cp", "-r", "{fuchsia_resources_path}", "{local_resources_path}"]

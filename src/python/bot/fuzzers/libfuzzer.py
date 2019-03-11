@@ -15,7 +15,11 @@
 
 import copy
 import os
+import errno
 import shutil
+
+import time
+import subprocess
 
 import engine_common
 
@@ -23,6 +27,8 @@ from system import environment
 from system import minijail
 from system import new_process
 from system import shell
+
+from google.cloud import storage
 
 from libFuzzer import constants
 
@@ -318,6 +324,79 @@ class LibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
                                 artifact_prefix, additional_args)
 
+class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
+  """libFuzzer runner (when Fuchsia is the target platform)."""
+  def __init__(self, executable_path, default_args=None):
+    # This code assumes the following layout for files in the storage bucket:
+    # * multiboot.bin
+    # * fvm.blk
+    # * fuchsia-ssh.zbi
+    # * qemu/*
+    # * .ssh/*
+    local_path = os.getcwd() + "/"
+    resources_path = local_path + "fuchsia_on_clusterfuzz_resources_v1"
+
+    try:
+      os.mkdir(resources_path)
+    except OSError as e:
+      if e.errno == errno.EEXIST:
+        pass
+    subbed_fuchsia_gsutil_command = [param.replace("{fuchsia_resources_path}", environment.get_value('FUCHSIA_RESOURCES_PATH', ''))
+                                     .replace("{local_resources_path}", resources_path) for param in constants.FUCHSIA_GSUTIL_COMMAND]
+    subprocess.call(subbed_fuchsia_gsutil_command)
+    qemu_path = resources_path + "/qemu-for-fuchsia/bin/qemu-system-x86_64"
+    os.chmod(qemu_path, 0o550)
+    kernel_path = resources_path + "/multiboot.bin"
+    os.chmod(kernel_path, 0o644)
+    pkey_path = resources_path + "/.ssh/pkey"
+    os.chmod(pkey_path, 0o400)
+    sharefiles_path = resources_path + "/qemu-for-fuchsia/share/qemu"
+    initrd_path = resources_path + "/fuchsia-ssh.zbi"
+    os.chmod(initrd_path, 0o644)
+    drive_path = resources_path + "/fuchsia.qcow2"
+    os.chmod(drive_path, 0o644)
+
+    # TODO: Add a mechanism for choosing portnum dynamically.
+    portnum = "56339"
+
+    self.subbed_qemu_base_command = [param.replace("{qemu}", qemu_path)
+                                .replace("{kernel}", kernel_path)
+                                .replace("{drive}", drive_path)
+                                .replace("{initrd}", initrd_path)
+                                .replace("{sharefiles}", sharefiles_path)
+                                .replace("{portnum}", portnum) for param in constants.FUCHSIA_QEMU_COMMAND_TEMPLATE]
+    self.subbed_ssh_base_command = [param.replace("{identity_file}", pkey_path)
+                                    .replace("{portnum}", portnum) for param in constants.FUCHSIA_SSH_COMMAND_TEMPLATE]
+
+    super(FuchsiaQemuLibFuzzerRunner, self).__init__(
+      executable_path=executable_path, default_args=default_args)
+
+  def get_command(self, additional_args=None):
+    command = self.subbed_ssh_base_command[:]
+    # TODO: Update this to dynamically pick a result from "fuzz list" and then run that fuzzer.
+    command.append("ls")
+    return command
+
+  def fuzz(self,
+           corpus_directories,
+           fuzz_timeout,
+           artifact_prefix=None,
+           additional_args=None):
+    """LibFuzzerCommon.fuzz override."""
+
+    subprocess.Popen(self.subbed_qemu_base_command)
+
+    # TODO: Do a few retries, instead of a single sleep.
+    time.sleep(5)
+
+    return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
+                                artifact_prefix, additional_args)
+
+    
+  def run_single_testcase(self,
+                        testcase_path,
+                        timeout=None,
+                        additional_args=None):
 
 class MinijailLibFuzzerRunner(engine_common.MinijailEngineFuzzerRunner,
                               LibFuzzerCommon):
@@ -497,6 +576,8 @@ def get_runner(fuzzer_path, temp_dir=None):
       shutil.copy(os.path.realpath('/bin/sh'), os.path.join(minijail_bin, 'sh'))
 
     runner = MinijailLibFuzzerRunner(fuzzer_path, minijail_chroot)
+  elif environment.platform() == "FUCHSIA":
+    runner = FuchsiaQemuLibFuzzerRunner(fuzzer_path)
   else:
     runner = LibFuzzerRunner(fuzzer_path)
 
