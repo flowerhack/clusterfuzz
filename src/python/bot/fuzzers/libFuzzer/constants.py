@@ -92,6 +92,10 @@ FUCHSIA_QEMU_COMMAND_TEMPLATE = ['/usr/local/google/home/flowerhack/lu_tsun/fuch
 	'none',
 	'-cpu',
 	'host,migratable=no',
+	'-netdev',
+	'user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::56338-:22',
+	'-device',
+	'e1000,netdev=net0,mac=52:54:00:63:5e:7b',
 	'-L',
 	'/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/qemu-for-fuchsia/share/qemu']
 
