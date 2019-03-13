@@ -66,3 +66,33 @@ RUNS_TO_REPRODUCE = 100
 
 # libFuzzer's exit code if a bug was found in the target code.
 TARGET_ERROR_EXITCODE = 77
+
+FUCHSIA_QEMU_COMMAND_TEMPLATE = ['/usr/local/google/home/flowerhack/lu_tsun/fuchsia/buildtools/linux-x64/qemu/bin/qemu-system-x86_64',
+	'-D',
+	'/tmp/qemustderr',
+	'-m',
+	'2048',
+	'-nographic',
+	'-kernel',
+	'/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/multiboot.bin',
+	'-initrd', '/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/fuchsia-ssh.zbi',
+	'-smp',
+	'4',
+	'-drive', 'file=/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/fuchsia.qcow2,format=qcow2,if=none,id=blobstore',
+	'-device',
+	'virtio-blk-pci,drive=blobstore',
+	'-monitor',
+	'none',
+	'-append',
+	'kernel.serial=legacy TERM=dumb',
+	'-machine',
+	'q35',
+	'-enable-kvm',
+	'-display',
+	'none',
+	'-cpu',
+	'host,migratable=no',
+	'-L',
+	'/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/qemu-for-fuchsia/share/qemu']
+
+FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-vvv", "-o", "StrictHostKeyChecking=no", "-i", "{identity_file}", "localhost", "-p", "56337", "{command}"]

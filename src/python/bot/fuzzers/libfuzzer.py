@@ -342,7 +342,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     logs.log_warn("RUNNING QEMU COMMAND")
     with open("/tmp/qemustdout", "w") as fstdout:
       with open("/tmp/qemustderr", "w") as ferr:
-        subprocess.Popen(['/usr/local/google/home/flowerhack/lu_tsun/fuchsia/buildtools/linux-x64/qemu/bin/qemu-system-x86_64', '-D', '/tmp/qemustderr', '-m', '2048', '-nographic', '-kernel', '/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/multiboot.bin', '-initrd', '/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/fuchsia-ssh.zbi', '-smp', '4', '-drive', 'file=/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/fuchsia.qcow2,format=qcow2,if=none,id=blobstore', '-device', 'virtio-blk-pci,drive=blobstore', '-monitor', 'none', '-append', 'kernel.serial=legacy TERM=dumb', '-machine', 'q35', '-enable-kvm', '-display', 'none', '-cpu', 'host,migratable=no', '-L', '/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/qemu-for-fuchsia/share/qemu'], stdout=fstdout, stderr=ferr)
+        subprocess.Popen(constants.FUCHSIA_QEMU_COMMAND_TEMPLATE, stdout=fstdout, stderr=ferr)
 
     time.sleep(10000)
 
