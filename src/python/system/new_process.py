@@ -262,11 +262,10 @@ class ProcessRunner(object):
     """
     command = self.get_command(additional_args)
 
-    #if stdout == subprocess.PIPE and max_stdout_len:
-    #  stdout = tempfile.TemporaryFile()
+    # TODO: revert this before merge
+    # if stdout == subprocess.PIPE and max_stdout_len:
+    #   stdout = tempfile.TemporaryFile()
     stdout = open("/tmp/howtocookawolf","w+")
-
-    logs.log_warn("run!!!")
 
     return ChildProcess(
         subprocess.Popen(
@@ -309,7 +308,6 @@ class ProcessRunner(object):
     Returns:
       A tuple of (return code, output, time process ran for, or None on timeout)
     """
-    logs.log_warn("run and wait!!!")
     process = self.run(
         additional_args,
         max_stdout_len=max_stdout_len,

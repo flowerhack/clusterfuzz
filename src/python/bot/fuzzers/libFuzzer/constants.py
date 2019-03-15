@@ -147,3 +147,5 @@ FUCHSIA_QEMU_COMMAND_TEMPLATE = ['/usr/local/google/home/flowerhack/lu_tsun/fuch
 	'/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/qemu-for-fuchsia/share/qemu']
 
 FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-i", "{identity_file}", "localhost", "-p", "56338", "{command}"]
+
+FUCHSIA_BUCKET_NAME = "fuchsia_on_clusterfuzz_resources_v1"

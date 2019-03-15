@@ -328,43 +328,27 @@ class LibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
 class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
   """libFuzzer runner (when Fuchsia is the target platform)."""
   def __init__(self, executable_path, default_args=None):
-    auth_key = "pkey"
-    # TODO: implement the qemu download stuff probs via gsutil
-    qemu_files = "qemu-system-x86_64"
-    kernel = "multiboot.bin"
-    drive_file = "fvm.blk"
-    initrd = "fuchsia.zbi"
-    # fvm.blk isn't passed in as an argument anywhere
-    fvm = "fvm.blk"
+    # This code assumes the following layout for files in the storage bucket:
+    # * multiboot.bin
+    # * fvm.blk
+    # * fuchsia-ssh.zbi
+    # * qemu/*
+    # * .ssh/*
 
-    local_path = os.getcwd() + "/";
-    self.identity_file_path = local_path + auth_key
+    # TODO gsutil cp gs://constants.FUCHSIA_BUCKET_NAME/* local_path
 
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket("fuchsia_on_clusterfuzz_resources_v1")
+    local_path = os.getcwd() + "/"
 
     # TODO: any way to make sure all permissions are as expected?
 
-    # Download fvm, kernel, and initrd.
+    qemu_path = local_path + "qemu/bin/qemu-system-x86_64"
+    kernel_path = local_path + "multiboot.bin"
+    initrd_path = local_path + "fuchsia-ssh.zbi"
+    pkey_path = local_path + ".ssh/pkey"
 
-    blob = bucket.blob(fvm)
-    blob.download_to_filename(local_path + fvm)
-    blob = bucket.blob(kernel)
-    blob.download_to_filename(local_path + kernel)
-    blob = bucket.blob()
-    blob.download_to_filename(local_path + initrd)
-    blob = bucket.blob
-
-    # Download a .ssh directory.  Untar it.
-
-    # Download QEMU binaries + all necessary sources.  Untar them.
-
-    # Make a qcow2 image from the FVM, if there isn't one already.
+    # TODO: Make a qcow2 image from the FVM, if there isn't one already.
     # (Need to make this, rather than merely download it, because relies on fvm.blk remaining in the
     # same location from the time of creation.)
-
-    # Bake the SSH keys into the zbi.
-
 
     super(FuchsiaQemuLibFuzzerRunner, self).__init__(
       executable_path=executable_path, default_args=default_args)
@@ -383,10 +367,12 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     logs.log_warn("RUNNING QEMU COMMAND")
     logs.log_warn("Command: %s" % constants.FUCHSIA_QEMU_COMMAND_TEMPLATE)
     logs.log_warn("Command: %s" % " ".join(constants.FUCHSIA_QEMU_COMMAND_TEMPLATE))
+    # TODO: do in-place replacement for template vars
     with open("/tmp/qemustdout", "w") as fstdout:
       with open("/tmp/qemustderr", "w") as ferr:
         subprocess.Popen(constants.FUCHSIA_QEMU_COMMAND_TEMPLATE, stdout=fstdout, stderr=ferr)
 
+    # TODO: do retries instead of a sleep
     time.sleep(5)
 
     return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
