@@ -29,6 +29,8 @@ from system import minijail
 from system import new_process
 from system import shell
 
+from google.cloud import storage
+
 from libFuzzer import constants
 
 MAX_OUTPUT_LEN = 1 * 1024 * 1024  # 1 MB
@@ -326,11 +328,50 @@ class LibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
 class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
   """libFuzzer runner (when Fuchsia is the target platform)."""
   def __init__(self, executable_path, default_args=None):
+    auth_key = "pkey"
+    # TODO: implement the qemu download stuff probs via gsutil
+    qemu_files = "qemu-system-x86_64"
+    kernel = "multiboot.bin"
+    drive_file = "fvm.blk"
+    initrd = "fuchsia.zbi"
+    # fvm.blk isn't passed in as an argument anywhere
+    fvm = "fvm.blk"
+
+    local_path = os.getcwd() + "/";
+    self.identity_file_path = local_path + auth_key
+
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket("fuchsia_on_clusterfuzz_resources_v1")
+
+    # TODO: any way to make sure all permissions are as expected?
+
+    # Download fvm, kernel, and initrd.
+
+    blob = bucket.blob(fvm)
+    blob.download_to_filename(local_path + fvm)
+    blob = bucket.blob(kernel)
+    blob.download_to_filename(local_path + kernel)
+    blob = bucket.blob()
+    blob.download_to_filename(local_path + initrd)
+    blob = bucket.blob
+
+    # Download a .ssh directory.  Untar it.
+
+    # Download QEMU binaries + all necessary sources.  Untar them.
+
+    # Make a qcow2 image from the FVM, if there isn't one already.
+    # (Need to make this, rather than merely download it, because relies on fvm.blk remaining in the
+    # same location from the time of creation.)
+
+    # Bake the SSH keys into the zbi.
+
+
     super(FuchsiaQemuLibFuzzerRunner, self).__init__(
       executable_path=executable_path, default_args=default_args)
 
   def get_command(self, additional_args=None):
-    return ["ls", "-a", "-i"]
+    #logs.log_warn("getting command for ssh")
+    return ["ssh", "-i", "/usr/local/google/home/flowerhack/golden-image/pkey", "localhost", "-p", "56338", "ls"]
 
   def fuzz(self,
            corpus_directories,
@@ -340,11 +381,13 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     """LibFuzzerCommon.fuzz override."""
 
     logs.log_warn("RUNNING QEMU COMMAND")
+    logs.log_warn("Command: %s" % constants.FUCHSIA_QEMU_COMMAND_TEMPLATE)
+    logs.log_warn("Command: %s" % " ".join(constants.FUCHSIA_QEMU_COMMAND_TEMPLATE))
     with open("/tmp/qemustdout", "w") as fstdout:
       with open("/tmp/qemustderr", "w") as ferr:
         subprocess.Popen(constants.FUCHSIA_QEMU_COMMAND_TEMPLATE, stdout=fstdout, stderr=ferr)
 
-    time.sleep(10000)
+    time.sleep(5)
 
     return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
                                 artifact_prefix, additional_args)

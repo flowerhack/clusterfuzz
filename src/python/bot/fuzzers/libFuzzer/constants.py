@@ -67,6 +67,53 @@ RUNS_TO_REPRODUCE = 100
 # libFuzzer's exit code if a bug was found in the target code.
 TARGET_ERROR_EXITCODE = 77
 
+# about to remake
+
+# FUCHSIA_QEMU_COMMAND_TEMPLATE = ['/usr/local/google/home/flowerhack/lu_tsun/fuchsia/buildtools/linux-x64/qemu/bin/qemu-system-x86_64',
+# 	'-D',
+# 	'/tmp/qemustderr',
+#	'-m',
+#	'2048',
+#	'-nographic',
+#	'-kernel',
+#	'/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/multiboot.bin',
+#	'-initrd', '/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/fuchsia-ssh.zbi',
+#	'-smp',
+#	'4',
+#	'-drive', 'file=/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/fuchsia.qcow2,format=qcow2,if=none,id=blobstore',
+#	'-device',
+#	'virtio-blk-pci,drive=blobstore',
+#	'-monitor',
+#	'none',
+#	'-append',
+#	'kernel.serial=legacy TERM=dumb',
+#	'-machine',
+#	'q35',
+#	'-enable-kvm',
+#	'-display',
+#	'none',
+#	'-cpu',
+#	'host,migratable=no',
+#	'-netdev',
+#	'user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::56338-:22',
+#	'-device',
+#	'e1000,netdev=net0,mac=52:54:00:63:5e:7b',
+#	'-L',
+#	'/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/qemu-for-fuchsia/share/qemu']
+
+# commands to make a golden-image:
+# cp ~/lu_tsun/fuchsia/out/x64/obj/build/images/fvm.blk ~/golden-image/fvm.blk
+# cp ~/lu_tsun/fuchsia/out/x64/fuchsia.zbi ~/golden-image/fuchsia.zbi
+# mkdir ~/golden-image/.ssh
+# cp -a ~/lu_tsun/fuchsia/.ssh/. ~/golden-image/
+# cd ~/golden-image
+# cp /usr/local/google/home/flowerhack/lu_tsun/fuchsia/out/x64/../build-zircon/multiboot.bin ~/golden-image
+# /usr/local/google/home/flowerhack/lu_tsun/fuchsia/buildtools/linux-x64/qemu/bin/qemu-img create -f qcow2 -b fvm.blk fuchsia.qcow2
+# /usr/local/google/home/flowerhack/lu_tsun/fuchsia/out/build-zircon/tools/zbi -o fuchsia-ssh.zbi fuchsia.zbi --entry data/ssh/authorized_keys=~/golden-image/.ssh/authorized_keys
+
+
+# Using portnum 56338 for now.
+
 FUCHSIA_QEMU_COMMAND_TEMPLATE = ['/usr/local/google/home/flowerhack/lu_tsun/fuchsia/buildtools/linux-x64/qemu/bin/qemu-system-x86_64',
 	'-D',
 	'/tmp/qemustderr',
@@ -74,11 +121,11 @@ FUCHSIA_QEMU_COMMAND_TEMPLATE = ['/usr/local/google/home/flowerhack/lu_tsun/fuch
 	'2048',
 	'-nographic',
 	'-kernel',
-	'/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/multiboot.bin',
-	'-initrd', '/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/fuchsia-ssh.zbi',
+	'/usr/local/google/home/flowerhack/golden-image/multiboot.bin',
+	'-initrd', '/usr/local/google/home/flowerhack/golden-image/fuchsia-ssh.zbi',
 	'-smp',
 	'4',
-	'-drive', 'file=/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/fuchsia.qcow2,format=qcow2,if=none,id=blobstore',
+	'-drive', 'file=/usr/local/google/home/flowerhack/golden-image/fuchsia.qcow2,format=qcow2,if=none,id=blobstore',
 	'-device',
 	'virtio-blk-pci,drive=blobstore',
 	'-monitor',
@@ -99,4 +146,4 @@ FUCHSIA_QEMU_COMMAND_TEMPLATE = ['/usr/local/google/home/flowerhack/lu_tsun/fuch
 	'-L',
 	'/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/qemu-for-fuchsia/share/qemu']
 
-FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-vvv", "-o", "StrictHostKeyChecking=no", "-i", "{identity_file}", "localhost", "-p", "56337", "{command}"]
+FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-i", "{identity_file}", "localhost", "-p", "56338", "{command}"]
