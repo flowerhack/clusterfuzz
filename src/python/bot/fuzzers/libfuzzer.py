@@ -332,30 +332,52 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     # * multiboot.bin
     # * fvm.blk
     # * fuchsia-ssh.zbi
-    # * qemu/*
+    # * qemu-for-fuchsia/*
     # * .ssh/*
+    # As of March 2019 this is ~225mb of data.
 
-    # TODO gsutil cp gs://constants.FUCHSIA_BUCKET_NAME/* local_path
+    # TODO: check if files exist before downloading?
+    # TODO: make a dir and DL there?
+    # TODO: will a -m flag speed this up?
+    logs.log_warn("Downloading necessary files...")
+    subprocess.call(constants.FUCHSIA_GSUTIL_COMMAND)
+    logs.log_warn("Download done.")
 
     local_path = os.getcwd() + "/"
 
-    # TODO: any way to make sure all permissions are as expected?
-
-    qemu_path = local_path + "qemu/bin/qemu-system-x86_64"
+    qemu_path = local_path + "qemu-for-fuchsia/bin/qemu-system-x86_64"
     kernel_path = local_path + "multiboot.bin"
-    initrd_path = local_path + "fuchsia-ssh.zbi"
     pkey_path = local_path + ".ssh/pkey"
+    qemu_sharefiles_path = local_path + "qemu-for-fuchsia/share"
 
     # TODO: Make a qcow2 image from the FVM, if there isn't one already.
     # (Need to make this, rather than merely download it, because relies on fvm.blk remaining in the
     # same location from the time of creation.)
+    initrd_path = local_path + "fuchsia-ssh.zbi"
+    drive_path = local_path + "fuchsia.qcow2"
+
+    # TODO: dynamic assignment of portnum
+    portnum = "56339"
+
+    # TODO: any way to make sure all permissions are as expected?
+    os.chmod(qemu_path, 0777)
+
+    self.qemu_command = [param.replace("{qemu}", qemu_path)
+                         .replace("{kernel}", kernel_path)
+                         .replace("{drive}", drive_path)
+                         .replace("{portnum}", portnum)
+                         .replace("{qemu_sharefiles}", qemu_sharefiles_path)
+                         .replace("{initrd}", initrd_path) for param in constants.FUCHSIA_QEMU_COMMAND_TEMPLATE]
+
+    self.ssh_command = [param.replace("{pkey}", pkey_path)
+                        .replace("{portnum}", portnum) for param in constants.FUCHSIA_SSH_COMMAND_TEMPLATE]
 
     super(FuchsiaQemuLibFuzzerRunner, self).__init__(
       executable_path=executable_path, default_args=default_args)
 
   def get_command(self, additional_args=None):
     #logs.log_warn("getting command for ssh")
-    return ["ssh", "-i", "/usr/local/google/home/flowerhack/golden-image/pkey", "localhost", "-p", "56338", "ls"]
+    return self.ssh_command
 
   def fuzz(self,
            corpus_directories,
@@ -365,12 +387,13 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     """LibFuzzerCommon.fuzz override."""
 
     logs.log_warn("RUNNING QEMU COMMAND")
-    logs.log_warn("Command: %s" % constants.FUCHSIA_QEMU_COMMAND_TEMPLATE)
-    logs.log_warn("Command: %s" % " ".join(constants.FUCHSIA_QEMU_COMMAND_TEMPLATE))
+    logs.log_warn("Command: %s" % self.qemu_command)
+    logs.log_warn("Command: %s" % " ".join(self.qemu_command))
+    # TODO remove the stdout stderr before mering
     # TODO: do in-place replacement for template vars
     with open("/tmp/qemustdout", "w") as fstdout:
       with open("/tmp/qemustderr", "w") as ferr:
-        subprocess.Popen(constants.FUCHSIA_QEMU_COMMAND_TEMPLATE, stdout=fstdout, stderr=ferr)
+        subprocess.Popen(self.qemu_command, stdout=fstdout, stderr=ferr)
 
     # TODO: do retries instead of a sleep
     time.sleep(5)
