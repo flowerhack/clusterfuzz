@@ -140,12 +140,14 @@ FUCHSIA_QEMU_COMMAND_TEMPLATE = ['/usr/local/google/home/flowerhack/lu_tsun/fuch
 	'-cpu',
 	'host,migratable=no',
 	'-netdev',
-	'user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::56338-:22',
+	'user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::56342-:22',
 	'-device',
 	'e1000,netdev=net0,mac=52:54:00:63:5e:7b',
 	'-L',
 	'/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/qemu-for-fuchsia/share/qemu']
 
-FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-i", "{identity_file}", "localhost", "-p", "56338", "{command}"]
+FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-i", "{identity_file}", "localhost", "-p", "56342", "{command}"]
 
 FUCHSIA_BUCKET_NAME = "fuchsia_on_clusterfuzz_resources_v1"
+
+FUCHSIA_GSUTIL_COMMAND = ["gsutil", "cp", "-r", "gs://fuchsia_on_clusterfuzz_resources_v1/*", "."]
