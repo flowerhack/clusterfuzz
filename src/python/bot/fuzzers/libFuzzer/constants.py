@@ -149,3 +149,5 @@ FUCHSIA_QEMU_COMMAND_TEMPLATE = ['/usr/local/google/home/flowerhack/lu_tsun/fuch
 FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-i", "{identity_file}", "localhost", "-p", "56338", "{command}"]
 
 FUCHSIA_BUCKET_NAME = "fuchsia_on_clusterfuzz_resources_v1"
+
+FUCHSIA_GSUTIL_COMMAND = ["gsutil", "cp", "-r", "gs://fuchsia_on_clusterfuzz_resources_v1/*", "."]

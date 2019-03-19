@@ -338,6 +338,9 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     # TODO gsutil cp gs://constants.FUCHSIA_BUCKET_NAME/* local_path
 
     local_path = os.getcwd() + "/"
+    logs.log_warn("Downloading necessary files...")
+    subprocess.call(constants.FUCHSIA_GSUTIL_COMMAND)
+    logs.log_warn("Download done.")
 
     # TODO: any way to make sure all permissions are as expected?
 
@@ -349,6 +352,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     # TODO: Make a qcow2 image from the FVM, if there isn't one already.
     # (Need to make this, rather than merely download it, because relies on fvm.blk remaining in the
     # same location from the time of creation.)
+    initrd_path = local_path + "fuchsia-ssh.zbi"
+    drive_path = local_path + "fuchsia.qcow2"
 
     super(FuchsiaQemuLibFuzzerRunner, self).__init__(
       executable_path=executable_path, default_args=default_args)
