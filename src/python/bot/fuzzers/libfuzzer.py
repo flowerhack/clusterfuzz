@@ -22,6 +22,8 @@ import subprocess
 from metrics import logs
 from sys import stdin, stdout, stderr
 
+import tempfile
+
 import engine_common
 
 from system import environment
@@ -339,7 +341,20 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
 
     local_path = os.getcwd() + "/"
     logs.log_warn("Downloading necessary files...")
-    subprocess.call(constants.FUCHSIA_GSUTIL_COMMAND)
+    # this successfully downloads
+    #dirpath = tempfile.mkdtemp()
+    logs.log_warn("Downloading to %s" % dirpath)
+    # this successfully downloads
+    #subprocess.call(["gsutil", "cp", "-r", "gs://fuchsia_on_clusterfuzz_resources_v1/*", dirpath])
+
+    # this section does NOT successfully download. it doesn't DL ANYTHINg tho, so uh, what gives.
+    #dirpath = local_path + "fuchsia_on_clusterfuzz_resources_v1"
+    #try:
+    #  os.mkdir(dirpath)
+    #except FileExistsError:
+    #  pass
+    #subprocess.call(["gsutil", "cp", "-r", "gs://fuchsia_on_clusterfuzz_resources_v1/*", dirpath])
+    #subprocess.call(constants.FUCHSIA_GSUTIL_COMMAND)
     logs.log_warn("Download done.")
 
     # TODO: any way to make sure all permissions are as expected?
