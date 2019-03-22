@@ -140,13 +140,13 @@ FUCHSIA_QEMU_COMMAND_TEMPLATE = ['{qemu}',
 	'-cpu',
 	'host,migratable=no',
 	'-netdev',
-	'user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::56339-:22',
+	'user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::{portnum}-:22',
 	'-device',
 	'e1000,netdev=net0,mac=52:54:00:63:5e:7b',
 	'-L',
 	'{sharefiles}']
 
-FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-i", "{identity_file}", "-o", "StrictHostKeyChecking no", "localhost", "-p", "56338"]
+FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-i", "{identity_file}", "-o", "StrictHostKeyChecking no", "localhost", "-p", "{portnum}"]
 
 FUCHSIA_BUCKET_NAME = "fuchsia_on_clusterfuzz_resources_v1"
 

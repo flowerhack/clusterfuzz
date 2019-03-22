@@ -367,6 +367,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     kernel_path = resources_path + "/multiboot.bin"
     os.chmod(kernel_path, 0o644)
     pkey_path = resources_path + "/.ssh/pkey"
+    os.chmod(pkey_path, 0o400)
     sharefiles_path = resources_path + "/qemu-for-fuchsia/share/qemu"
 
 
@@ -378,12 +379,17 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     drive_path = resources_path + "/fuchsia.qcow2"
     os.chmod(drive_path, 0o644)
 
+    # TODO: Add a mechanism for choosing portnum dynamically.
+    portnum = "56337"
+
     self.subbed_qemu_base_command = [param.replace("{qemu}", qemu_path)
                                 .replace("{kernel}", kernel_path)
                                 .replace("{drive}", drive_path)
                                 .replace("{initrd}", initrd_path)
-                                .replace("{sharefiles}", sharefiles_path) for param in constants.FUCHSIA_QEMU_COMMAND_TEMPLATE]
-    self.subbed_ssh_base_command = [param.replace("{identity_file}", pkey_path)]
+                                .replace("{sharefiles}", sharefiles_path)
+                                .replace("{portnum}", portnum) for param in constants.FUCHSIA_QEMU_COMMAND_TEMPLATE]
+    self.subbed_ssh_base_command = [param.replace("{identity_file}", pkey_path)
+                                    .replace("{portnum}", portnum) for param in constants.FUCHSIA_SSH_COMMAND_TEMPLATE]
 
     super(FuchsiaQemuLibFuzzerRunner, self).__init__(
       executable_path=executable_path, default_args=default_args)
