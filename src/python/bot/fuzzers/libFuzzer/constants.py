@@ -146,7 +146,6 @@ FUCHSIA_QEMU_COMMAND_TEMPLATE = ['{qemu}',
 	'-L',
 	'{sharefiles}']
 
-# ["ssh", "-i", "/usr/local/google/home/flowerhack/golden-image/pkey", "-o", "StrictHostKeyChecking no", "localhost", "-p", "56339", "ls"]
 FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-i", "{identity_file}", "-o", "StrictHostKeyChecking no", "localhost", "-p", "56338"]
 
 FUCHSIA_BUCKET_NAME = "fuchsia_on_clusterfuzz_resources_v1"

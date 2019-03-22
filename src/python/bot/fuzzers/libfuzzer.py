@@ -383,13 +383,16 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
                                 .replace("{drive}", drive_path)
                                 .replace("{initrd}", initrd_path)
                                 .replace("{sharefiles}", sharefiles_path) for param in constants.FUCHSIA_QEMU_COMMAND_TEMPLATE]
+    self.subbed_ssh_base_command = [param.replace("{identity_file}", pkey_path)]
 
     super(FuchsiaQemuLibFuzzerRunner, self).__init__(
       executable_path=executable_path, default_args=default_args)
 
   def get_command(self, additional_args=None):
-    #logs.log_warn("getting command for ssh")
-    return ["ssh", "-i", "/usr/local/google/home/flowerhack/golden-image/pkey", "-o", "StrictHostKeyChecking no", "localhost", "-p", "56339", "ls"]
+    command = self.subbed_ssh_base_command[:]
+    # TODO: update this to dynamically pick a result from "fuzz list" and then run the fuzzer
+    command.append("ls")
+    return command
 
   def fuzz(self,
            corpus_directories,
