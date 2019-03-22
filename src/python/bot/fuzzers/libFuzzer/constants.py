@@ -114,18 +114,18 @@ TARGET_ERROR_EXITCODE = 77
 
 # Using portnum 56338 for now.
 
-FUCHSIA_QEMU_COMMAND_TEMPLATE = ['/usr/local/google/home/flowerhack/lu_tsun/fuchsia/buildtools/linux-x64/qemu/bin/qemu-system-x86_64',
+FUCHSIA_QEMU_COMMAND_TEMPLATE = ['{qemu}',
 	'-D',
 	'/tmp/qemustderr',
 	'-m',
 	'2048',
 	'-nographic',
 	'-kernel',
-	'/usr/local/google/home/flowerhack/golden-image/multiboot.bin',
-	'-initrd', '/usr/local/google/home/flowerhack/golden-image/fuchsia-ssh.zbi',
+	'{kernel}',
+	'-initrd', '{initrd}',
 	'-smp',
 	'4',
-	'-drive', 'file=/usr/local/google/home/flowerhack/golden-image/fuchsia.qcow2,format=qcow2,if=none,id=blobstore',
+	'-drive', 'file={drive},format=qcow2,if=none,id=blobstore',
 	'-device',
 	'virtio-blk-pci,drive=blobstore',
 	'-monitor',
@@ -140,13 +140,13 @@ FUCHSIA_QEMU_COMMAND_TEMPLATE = ['/usr/local/google/home/flowerhack/lu_tsun/fuch
 	'-cpu',
 	'host,migratable=no',
 	'-netdev',
-	'user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::56338-:22',
+	'user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::56339-:22',
 	'-device',
 	'e1000,netdev=net0,mac=52:54:00:63:5e:7b',
 	'-L',
-	'/usr/local/google/home/flowerhack/eragon/clusterfuzz/src/python/bot/fuzzers/libFuzzer/qemu-for-fuchsia/share/qemu']
+	'{sharefiles}']
 
-FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-i", "{identity_file}", "localhost", "-p", "56338", "{command}"]
+FUCHSIA_SSH_COMMAND_TEMPLATE = ["ssh", "-i", "{identity_file}", "-o", "'StrictHosKeyChecking no'", "localhost", "-p", "56338", "{command}"]
 
 FUCHSIA_BUCKET_NAME = "fuchsia_on_clusterfuzz_resources_v1"
 
