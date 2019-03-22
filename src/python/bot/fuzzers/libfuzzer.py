@@ -389,7 +389,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
 
   def get_command(self, additional_args=None):
     #logs.log_warn("getting command for ssh")
-    return ["ssh", "-i", "/usr/local/google/home/flowerhack/golden-image/pkey", "localhost", "-p", "56339", "ls"]
+    return ["ssh", "-i", "/usr/local/google/home/flowerhack/golden-image/pkey", "-o", "StrictHostKeyChecking no", "localhost", "-p", "56339", "ls"]
 
   def fuzz(self,
            corpus_directories,
@@ -407,6 +407,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     with open("/tmp/qemustdout", "w") as fstdout:
       with open("/tmp/qemustderr", "w") as ferr:
         subprocess.Popen(self.subbed_qemu_base_command, stdout=fstdout, stderr=ferr)
+
+    logs.log_warn("SSH COMMAND IS %s" % self.get_command())
 
     # TODO: do retries instead of a sleep
     time.sleep(5)
