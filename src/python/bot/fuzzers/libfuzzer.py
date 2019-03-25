@@ -386,9 +386,17 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
 
     subprocess.Popen(self.subbed_qemu_base_command)
 
-    # TODO: Do a few retries, instead of a single sleep.
-    time.sleep(5)
+    # Don't try to run the fuzzer until we know we can SSH successfully.
+    test_command = self.subbed_ssh_base_command[:]
+    test_command.append("fortune")
+    while(True):
+      try:
+        subprocess.check_call(test_command)
+        break
+      except CalledProcessError:
+        sleep(2)
 
+    # Start fuzzing.
     return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
                                 artifact_prefix, additional_args)
 
