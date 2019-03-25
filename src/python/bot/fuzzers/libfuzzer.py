@@ -337,31 +337,19 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     # * fuchsia-ssh.zbi
     # * qemu/*
     # * .ssh/*
-
-    # TODO gsutil cp gs://constants.FUCHSIA_BUCKET_NAME/* local_path
-
     local_path = os.getcwd() + "/"
     logs.log_warn("Downloading necessary files...")
     resources_path = local_path + "fuchsia_on_clusterfuzz_resources_v1"
-    # this successfully downloads
-    #dirpath = tempfile.mkdtemp()
-    logs.log_warn("Downloading to %s" % resources_path)
-    # this successfully downloads
-    #subprocess.call(["gsutil", "cp", "-r", "gs://fuchsia_on_clusterfuzz_resources_v1/*", dirpath])
-
-    # this section does NOT successfully download. it doesn't DL ANYTHINg tho, so uh, what gives.
 
     try:
       os.mkdir(resources_path)
     except OSError as e:
       if e.errno == errno.EEXIST:
         pass
-    subprocess.call(["gsutil", "cp", "-r", "gs://fuchsia_on_clusterfuzz_resources_v1/*", resources_path])
-    #subprocess.call(constants.FUCHSIA_GSUTIL_COMMAND)
-    logs.log_warn("Download done.")
-
-    # TODO: any way to make sure all permissions are as expected?
-
+    subbed_fuchsia_gsutil_command = [param.replace("{fuchsia_resources_path}", environment.get_value('FUCHSIA_RESOURCES_PATH', ''))
+                                     .replace("{local_resources_path}", resources_path) for param in constants.FUCHSIA_GSUTIL_COMMAND]
+    logs.log_warn("Command: %s" % subbed_fuchsia_gsutil_command)
+    subprocess.call(subbed_fuchsia_gsutil_command)
     qemu_path = resources_path + "/qemu-for-fuchsia/bin/qemu-system-x86_64"
     os.chmod(qemu_path, 0o550)
     kernel_path = resources_path + "/multiboot.bin"
@@ -369,7 +357,6 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     pkey_path = resources_path + "/.ssh/pkey"
     os.chmod(pkey_path, 0o400)
     sharefiles_path = resources_path + "/qemu-for-fuchsia/share/qemu"
-
 
     # TODO: Make a qcow2 image from the FVM, if there isn't one already.
     # (Need to make this, rather than merely download it, because relies on fvm.blk remaining in the
@@ -380,7 +367,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
     os.chmod(drive_path, 0o644)
 
     # TODO: Add a mechanism for choosing portnum dynamically.
-    portnum = "56337"
+    portnum = "56339"
 
     self.subbed_qemu_base_command = [param.replace("{qemu}", qemu_path)
                                 .replace("{kernel}", kernel_path)
