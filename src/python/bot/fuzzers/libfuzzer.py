@@ -15,7 +15,6 @@
 
 import copy
 import os
-import subprocess
 import shutil
 import time
 
@@ -328,7 +327,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
   def __init__(self, executable_path, default_args=None):
     self.fuchsia_bucket_name = 'fuchsia_on_clusterfuzz_resources_v1'
 
-    # This initialization routine assumes that the GCS bucket contains the standard Fuchsia SDK, as well as:
+    # This initialization routine assumes that the GCS bucket contains the
+    # standard Fuchsia SDK, as well as:
     # * /qemu-for-fuchsia/*
     # * /.ssh/*
     resources_path = os.path.join(os.getcwd(), self.fuchsia_bucket_name)
@@ -336,13 +336,20 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     shell.create_directory_if_needed(resources_path)
 
     if 'FUCHSIA_RESOURCES_PATH' not in os.environ:
-      logs.log_error("Could not find path for remote Fuchsia resources bucket (FUCHSIA_RESOURCES_PATH)!")
+      logs.log_error(
+          ('Could not find path for remote Fuchsia resources bucket'
+           '(FUCHSIA_RESOURCES_PATH)!')
+      )
 
-    gsutil_command_arguments = ['cp', '-r', environment.get_value('FUCHSIA_RESOURCES_PATH', ''), resources_path]
+    gsutil_command_arguments = [
+        'cp', '-r',
+        environment.get_value('FUCHSIA_RESOURCES_PATH', ''), resources_path
+    ]
     process = new_process.ProcessRunner('gsutil', gsutil_command_arguments)
     result = process.run_and_wait()
     if result.return_code or result.timed_out:
-      logs.log_error('Failed to download Fuchsia resources.', output=result.output)
+      logs.log_error(
+          'Failed to download Fuchsia resources.', output=result.output)
 
     # Save paths for necessary commands later.
     qemu_path = os.path.join(resources_path, 'qemu-for-fuchsia', 'bin',
@@ -358,27 +365,32 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     sharefiles_path = os.path.join(resources_path, 'qemu-for-fuchsia', 'share',
                                    'qemu')
 
-    # The FVM is minimally sized to begin with; extend it to make room for ephemeral packages etc.
-    drive_path = os.path.join(resources_path, "extended_fvm.blk")
-    raw_fvm_path = os.path.join(resources_path, "target", "x64", "fvm.blk")
-    process = new_process.ProcessRunner("cp", [raw_fvm_path, drive_path])
+    # The FVM is minimally sized to begin with; extend it to make room for
+    # ephemeral packages etc.
+    drive_path = os.path.join(resources_path, 'extended_fvm.blk')
+    raw_fvm_path = os.path.join(resources_path, 'target', 'x64', 'fvm.blk')
+    process = new_process.ProcessRunner('cp', [raw_fvm_path, drive_path])
     result = process.run_and_wait()
     if result.return_code or result.timed_out:
       logs.log_error('Failed to copy FVM.', output=result.output)
     os.chmod(drive_path, 0o644)
-    fvm_tool_path = os.path.join(resources_path, "tools", "fvm")
+    fvm_tool_path = os.path.join(resources_path, 'tools', 'fvm')
     os.chmod(fvm_tool_path, 0o500)
-    process = new_process.ProcessRunner(fvm_tool_path, [drive_path, "extend", "--length", "1G"])
+    process = new_process.ProcessRunner(
+        fvm_tool_path, [drive_path, 'extend', '--length', '1G'])
     result = process.run_and_wait()
     if result.return_code or result.timed_out:
       logs.log_error('Failed to extend FVM.', output=result.output)
 
     # Need to bake keys into ZBI so we can SSH into it.
-    zbi_tool = os.path.join(resources_path, "tools", "zbi")
+    zbi_tool = os.path.join(resources_path, 'tools', 'zbi')
     os.chmod(zbi_tool, 0o500)
-    fuchsia_zbi = os.path.join(resources_path, "target", "x64", "fuchsia.zbi")
-    initrd_path = os.path.join(resources_path, "fuchsia-ssh.zbi")
-    process = new_process.ProcessRunner(zbi_tool, ["-o", initrd_path, fuchsia_zbi, "-e", "data/ssh/authorized_keys=" + authorized_keys_path])
+    fuchsia_zbi = os.path.join(resources_path, 'target', 'x64', 'fuchsia.zbi')
+    initrd_path = os.path.join(resources_path, 'fuchsia-ssh.zbi')
+    process = new_process.ProcessRunner(zbi_tool, [
+        '-o', initrd_path, fuchsia_zbi, '-e',
+        'data/ssh/authorized_keys=' + authorized_keys_path
+    ])
     result = process.run_and_wait()
     if result.return_code or result.timed_out:
       logs.log_error('Failed to add keys to Fuchsia ZBI.', output=result.output)
@@ -386,7 +398,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     os.chmod(initrd_path, 0o644)
 
     # TODO(flowerhack): Add a mechanism for choosing portnum dynamically.
-    portnum = "56339"
+    portnum = '56339'
 
     self.qemu_command = [
         qemu_path, '-D', '/tmp/qemustderr', '-m', '2048', '-nographic',
@@ -395,13 +407,14 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
         'virtio-blk-pci,drive=blobstore', '-monitor', 'none', '-append',
         'kernel.serial=legacy TERM=dumb', '-machine', 'q35', '-enable-kvm',
         '-display', 'none', '-cpu', 'host,migratable=no', '-netdev',
-        'user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::' + portnum + '-:22',
-        '-device', 'e1000,netdev=net0,mac=52:54:00:63:5e:7b', '-L',
-        sharefiles
+        ('user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,'
+         'host=192.168.3.2,hostfwd=tcp::') + portnum + '-:22', '-device',
+        'e1000,netdev=net0,mac=52:54:00:63:5e:7b', '-L', sharefiles_path
     ]
 
     self.ssh_command = [
-      'ssh', '-i', pkey_path, '-o', 'StrictHostKeyChecking no', 'localhost', '-p', portnum
+        'ssh', '-i', pkey_path, '-o', 'StrictHostKeyChecking no', 'localhost',
+        '-p', portnum
     ]
 
     super(FuchsiaQemuLibFuzzerRunner, self).__init__(
@@ -409,7 +422,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
 
   def get_command(self, additional_args=None):
     command = self.ssh_command[:]
-    # TODO(flowerhack): Update this to dynamically pick a result from "fuzz list" and then run that fuzzer.
+    # TODO(flowerhack): Update this to dynamically pick a result from "fuzz
+    # list" and then run that fuzzer.
     command.append("ls")
     return command
 
@@ -419,13 +433,15 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            artifact_prefix=None,
            additional_args=None):
     """LibFuzzerCommon.fuzz override."""
-    qemu_process = new_process.ProcessRunner(self.qemu_command[0], self.qemu_command[1:])
+    qemu_process = new_process.ProcessRunner(self.qemu_command[0],
+                                             self.qemu_command[1:])
     qemu_process.run()
 
     # Don't try to run the fuzzer until we know we can SSH successfully.
     test_command = self.ssh_command[:]
     test_command.append("ls")
-    ssh_test_process = new_process.ProcessRunner(test_command[0], test_command[1:])
+    ssh_test_process = new_process.ProcessRunner(test_command[0],
+                                                 test_command[1:])
     while True:
       result = ssh_test_process.run_and_wait()
       if (not result.return_code) and (not result.timed_out):
