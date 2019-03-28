@@ -32,7 +32,6 @@ from metrics import fuzzer_logs
 from metrics import fuzzer_stats
 from metrics import logs
 from platforms import android
-from platforms import fuchsia
 from system import archive
 from system import environment
 from system import process_handler

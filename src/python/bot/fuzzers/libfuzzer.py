@@ -336,10 +336,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     shell.create_directory_if_needed(resources_path)
 
     if 'FUCHSIA_RESOURCES_PATH' not in os.environ:
-      logs.log_error(
-          ('Could not find path for remote Fuchsia resources bucket'
-           '(FUCHSIA_RESOURCES_PATH)!')
-      )
+      logs.log_error(('Could not find path for remote Fuchsia resources bucket'
+                      '(FUCHSIA_RESOURCES_PATH)!'))
 
     gsutil_command_arguments = [
         'cp', '-r',
