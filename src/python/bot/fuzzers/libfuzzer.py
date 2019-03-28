@@ -16,10 +16,9 @@
 import copy
 import os
 import errno
-import shutil
-
-import time
 import subprocess
+import shutil
+import time
 
 import engine_common
 
@@ -327,33 +326,66 @@ class LibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
 class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
   """libFuzzer runner (when Fuchsia is the target platform)."""
   def __init__(self, executable_path, default_args=None):
+    self.fuchsia_qemu_command_template = ['{qemu}',
+                                  '-D',
+                                  '/tmp/qemustderr',
+                                  '-m',
+                                  '2048',
+                                  '-nographic',
+                                  '-kernel',
+                                  '{kernel}',
+                                  '-initrd', '{initrd}',
+                                  '-smp',
+                                  '4',
+                                  '-drive', 'file={drive},format=qcow2,if=none,id=blobstore',
+                                  '-device',
+                                  'virtio-blk-pci,drive=blobstore',
+                                  '-monitor',
+                                  'none',
+                                  '-append',
+                                 'kernel.serial=legacy TERM=dumb',
+                                  '-machine',
+                                  'q35',
+                                  '-enable-kvm',
+                                  '-display',
+                                  'none',
+                                  '-cpu',
+                                  'host,migratable=no',
+                                  '-netdev',
+                                  'user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::{portnum}-:22',
+                                  '-device',
+                                  'e1000,netdev=net0,mac=52:54:00:63:5e:7b',
+                                  '-L',
+                                  '{sharefiles}']
+
+    self.fuchsia_ssh_command_template = ['ssh', '-i', '{identity_file}', '-o', 'StrictHostKeyChecking no', 'localhost', '-p', '{portnum}']
+
+    self.fuchsia_bucket_name = 'fuchsia_on_clusterfuzz_resources_v1'
+
+    self.fuchsia_gsutil_command_template = ['gsutil', 'cp', '-r', '{fuchsia_resources_path}', '{local_resources_path}']
+
     # This code assumes the following layout for files in the storage bucket:
     # * multiboot.bin
     # * fvm.blk
     # * fuchsia-ssh.zbi
     # * qemu/*
     # * .ssh/*
-    local_path = os.getcwd() + "/"
-    resources_path = local_path + "fuchsia_on_clusterfuzz_resources_v1"
+    resources_path = os.path.join(os.getcwd(), self.fuchsia_bucket_name)
 
-    try:
-      os.mkdir(resources_path)
-    except OSError as e:
-      if e.errno == errno.EEXIST:
-        pass
+    shell.create_directory_if_needed(resources_path)
     subbed_fuchsia_gsutil_command = [param.replace("{fuchsia_resources_path}", environment.get_value('FUCHSIA_RESOURCES_PATH', ''))
-                                     .replace("{local_resources_path}", resources_path) for param in constants.FUCHSIA_GSUTIL_COMMAND]
+                                     .replace("{local_resources_path}", resources_path) for param in self.fuchsia_gsutil_command_template]
     subprocess.call(subbed_fuchsia_gsutil_command)
-    qemu_path = resources_path + "/qemu-for-fuchsia/bin/qemu-system-x86_64"
+    qemu_path = os.path.join(resources_path, 'qemu-for-fuchsia', 'bin', 'qemu-system-x86_64')
     os.chmod(qemu_path, 0o550)
-    kernel_path = resources_path + "/multiboot.bin"
+    kernel_path = os.path.join(resources_path, 'multiboot.bin')
     os.chmod(kernel_path, 0o644)
-    pkey_path = resources_path + "/.ssh/pkey"
+    pkey_path = os.path.join(resources_path, '.ssh', 'pkey')
     os.chmod(pkey_path, 0o400)
-    sharefiles_path = resources_path + "/qemu-for-fuchsia/share/qemu"
-    initrd_path = resources_path + "/fuchsia-ssh.zbi"
+    sharefiles_path = os.path.join(resources_path, '/qemu-for-fuchsia/share/qemu')
+    initrd_path = os.path.join(resources_path, 'fuchsia-ssh.zbi')
     os.chmod(initrd_path, 0o644)
-    drive_path = resources_path + "/fuchsia.qcow2"
+    drive_path = os.path.join(resources_path, 'fuchsia.qcow2'
     os.chmod(drive_path, 0o644)
 
     # TODO: Add a mechanism for choosing portnum dynamically.
@@ -364,9 +396,9 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner,LibFuzzerCommon):
                                 .replace("{drive}", drive_path)
                                 .replace("{initrd}", initrd_path)
                                 .replace("{sharefiles}", sharefiles_path)
-                                .replace("{portnum}", portnum) for param in constants.FUCHSIA_QEMU_COMMAND_TEMPLATE]
+                                .replace("{portnum}", portnum) for param in self.fuchsia_qemu_command_template]
     self.subbed_ssh_base_command = [param.replace("{identity_file}", pkey_path)
-                                    .replace("{portnum}", portnum) for param in constants.FUCHSIA_SSH_COMMAND_TEMPLATE]
+                                    .replace("{portnum}", portnum) for param in self.fuchsia_ssh_command_template]
 
     super(FuchsiaQemuLibFuzzerRunner, self).__init__(
       executable_path=executable_path, default_args=default_args)
