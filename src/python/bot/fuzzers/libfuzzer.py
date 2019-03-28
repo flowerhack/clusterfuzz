@@ -15,7 +15,6 @@
 
 import copy
 import os
-import errno
 import subprocess
 import shutil
 import time
@@ -27,8 +26,6 @@ from system import environment
 from system import minijail
 from system import new_process
 from system import shell
-
-from google.cloud import storage
 
 from libFuzzer import constants
 
@@ -329,31 +326,9 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
   """libFuzzer runner (when Fuchsia is the target platform)."""
 
   def __init__(self, executable_path, default_args=None):
-    self.fuchsia_qemu_command_template = [
-        '{qemu}', '-D', '/tmp/qemustderr', '-m', '2048', '-nographic',
-        '-kernel', '{kernel}', '-initrd', '{initrd}', '-smp', '4', '-drive',
-        'file={drive},format=raw,if=none,id=blobstore', '-device',
-        'virtio-blk-pci,drive=blobstore', '-monitor', 'none', '-append',
-        'kernel.serial=legacy TERM=dumb', '-machine', 'q35', '-enable-kvm',
-        '-display', 'none', '-cpu', 'host,migratable=no', '-netdev',
-        'user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::{portnum}-:22',
-        '-device', 'e1000,netdev=net0,mac=52:54:00:63:5e:7b', '-L',
-        '{sharefiles}'
-    ]
-
-    self.fuchsia_ssh_command_template = [
-        'ssh', '-i', '{identity_file}', '-o', 'StrictHostKeyChecking no',
-        'localhost', '-p', '{portnum}'
-    ]
-
     self.fuchsia_bucket_name = 'fuchsia_on_clusterfuzz_resources_v1'
 
-    self.fuchsia_gsutil_command_template = [
-        'gsutil', 'cp', '-r', '{fuchsia_resources_path}',
-        '{local_resources_path}'
-    ]
-
-    # This initialization routime assumes that the GCS bucket contains the standard Fuchsia SDK, as well as:
+    # This initialization routine assumes that the GCS bucket contains the standard Fuchsia SDK, as well as:
     # * /qemu-for-fuchsia/*
     # * /.ssh/*
     resources_path = os.path.join(os.getcwd(), self.fuchsia_bucket_name)
@@ -363,13 +338,11 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     if 'FUCHSIA_RESOURCES_PATH' not in os.environ:
       logs.log_error("Could not find path for remote Fuchsia resources bucket (FUCHSIA_RESOURCES_PATH)!")
 
-    subbed_fuchsia_gsutil_command = [
-        param.replace("{fuchsia_resources_path}",
-                      environment.get_value('FUCHSIA_RESOURCES_PATH', ''))
-        .replace("{local_resources_path}", resources_path)
-        for param in self.fuchsia_gsutil_command_template
-    ]
-    subprocess.call(subbed_fuchsia_gsutil_command)
+    gsutil_command_arguments = ['cp', '-r', environment.get_value('FUCHSIA_RESOURCES_PATH', ''), resources_path]
+    process = new_process.ProcessRunner('gsutil', gsutil_command_arguments)
+    result = process.run_and_wait()
+    if result.return_code or result.timed_out:
+      logs.log_error('Failed to download Fuchsia resources.', output=result.output)
 
     # Save paths for necessary commands later.
     qemu_path = os.path.join(resources_path, 'qemu-for-fuchsia', 'bin',
@@ -388,45 +361,55 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     # The FVM is minimally sized to begin with; extend it to make room for ephemeral packages etc.
     drive_path = os.path.join(resources_path, "extended_fvm.blk")
     raw_fvm_path = os.path.join(resources_path, "target", "x64", "fvm.blk")
-    copy_fvm = ["cp", raw_fvm_path, drive_path]
-    subprocess.call(copy_fvm)
+    process = new_process.ProcessRunner("cp", [raw_fvm_path, drive_path])
+    result = process.run_and_wait()
+    if result.return_code or result.timed_out:
+      logs.log_error('Failed to copy FVM.', output=result.output)
     os.chmod(drive_path, 0o644)
     fvm_tool_path = os.path.join(resources_path, "tools", "fvm")
     os.chmod(fvm_tool_path, 0o500)
-    subprocess.call([fvm_tool_path, drive_path, "extend", "--length", "1G"])
+    process = new_process.ProcessRunner(fvm_tool_path, [drive_path, "extend", "--length", "1G"])
+    result = process.run_and_wait()
+    if result.return_code or result.timed_out:
+      logs.log_error('Failed to extend FVM.', output=result.output)
 
     # Need to bake keys into ZBI so we can SSH into it.
     zbi_tool = os.path.join(resources_path, "tools", "zbi")
     os.chmod(zbi_tool, 0o500)
     fuchsia_zbi = os.path.join(resources_path, "target", "x64", "fuchsia.zbi")
     initrd_path = os.path.join(resources_path, "fuchsia-ssh.zbi")
-    make_fuchsia_ssh_zbi_command = [
-        zbi_tool, "-o", initrd_path, fuchsia_zbi, "-e",
-        "data/ssh/authorized_keys=" + authorized_keys_path
-    ]
-    subprocess.call(make_fuchsia_ssh_zbi_command)
+    process = new_process.ProcessRunner(zbi_tool, ["-o", initrd_path, fuchsia_zbi, "-e", "data/ssh/authorized_keys=" + authorized_keys_path])
+    result = process.run_and_wait()
+    if result.return_code or result.timed_out:
+      logs.log_error('Failed to add keys to Fuchsia ZBI.', output=result.output)
+
     os.chmod(initrd_path, 0o644)
 
-    # TODO: Add a mechanism for choosing portnum dynamically.
+    # TODO(flowerhack): Add a mechanism for choosing portnum dynamically.
     portnum = "56339"
 
-    self.subbed_qemu_base_command = [
-        param.replace("{qemu}", qemu_path).replace("{kernel}", kernel_path)
-        .replace("{drive}", drive_path).replace("{initrd}", initrd_path)
-        .replace("{sharefiles}", sharefiles_path).replace("{portnum}", portnum)
-        for param in self.fuchsia_qemu_command_template
+    self.qemu_command = [
+        qemu_path, '-D', '/tmp/qemustderr', '-m', '2048', '-nographic',
+        '-kernel', kernel_path, '-initrd', initrd_path, '-smp', '4', '-drive',
+        'file= ' + drive_path + ',format=raw,if=none,id=blobstore', '-device',
+        'virtio-blk-pci,drive=blobstore', '-monitor', 'none', '-append',
+        'kernel.serial=legacy TERM=dumb', '-machine', 'q35', '-enable-kvm',
+        '-display', 'none', '-cpu', 'host,migratable=no', '-netdev',
+        'user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,host=192.168.3.2,hostfwd=tcp::' + portnum + '-:22',
+        '-device', 'e1000,netdev=net0,mac=52:54:00:63:5e:7b', '-L',
+        sharefiles
     ]
-    self.subbed_ssh_base_command = [
-        param.replace("{identity_file}", pkey_path).replace(
-            "{portnum}", portnum) for param in self.fuchsia_ssh_command_template
+
+    self.ssh_command = [
+      'ssh', '-i', pkey_path, '-o', 'StrictHostKeyChecking no', 'localhost', '-p', portnum
     ]
 
     super(FuchsiaQemuLibFuzzerRunner, self).__init__(
         executable_path=executable_path, default_args=default_args)
 
   def get_command(self, additional_args=None):
-    command = self.subbed_ssh_base_command[:]
-    # TODO: Update this to dynamically pick a result from "fuzz list" and then run that fuzzer.
+    command = self.ssh_command[:]
+    # TODO(flowerhack): Update this to dynamically pick a result from "fuzz list" and then run that fuzzer.
     command.append("ls")
     return command
 
@@ -436,18 +419,18 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            artifact_prefix=None,
            additional_args=None):
     """LibFuzzerCommon.fuzz override."""
-
-    subprocess.Popen(self.subbed_qemu_base_command)
+    qemu_process = new_process.ProcessRunner(self.qemu_command[0], self.qemu_command[1:])
+    qemu_process.run()
 
     # Don't try to run the fuzzer until we know we can SSH successfully.
-    test_command = self.subbed_ssh_base_command[:]
+    test_command = self.ssh_command[:]
     test_command.append("ls")
-    while (True):
-      try:
-        subprocess.check_call(test_command)
+    ssh_test_process = new_process.ProcessRunner(test_command[0], test_command[1:])
+    while True:
+      result = ssh_test_process.run_and_wait()
+      if (not result.return_code) and (not result.timed_out):
         break
-      except subprocess.CalledProcessError:
-        time.sleep(2)
+      time.sleep(2)
 
     # Start fuzzing.
     return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
@@ -457,6 +440,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
                           testcase_path,
                           timeout=None,
                           additional_args=None):
+    #TODO(flowerhack): Fill out this command.
     pass
 
 
