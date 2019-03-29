@@ -343,11 +343,13 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     gsutil_command_arguments = [
         'cp', '-r', fuchsia_resources_url, resources_path
     ]
-    process = new_process.ProcessRunner('gsutil', gsutil_command_arguments)
-    result = process.run_and_wait()
-    if result.return_code or result.timed_out:
-      logs.log_error(
-          'Failed to download Fuchsia resources.', output=result.output)
+    logs.log_warn("gonna gsutil")
+    #process = new_process.ProcessRunner('gsutil', gsutil_command_arguments)
+    #result = process.run_and_wait()
+    #if result.return_code or result.timed_out:
+    #  logs.log_error(
+    #      'Failed to download Fuchsia resources.', output=result.output)
+    logs.log_warn("done gsutil")
 
     # Save paths for necessary commands later.
     qemu_path = os.path.join(resources_path, 'qemu-for-fuchsia', 'bin',
@@ -401,9 +403,9 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     self.qemu_command = [
         qemu_path, '-D', '/tmp/qemustderr', '-m', '2048', '-nographic',
         '-kernel', kernel_path, '-initrd', initrd_path, '-smp', '4', '-drive',
-        'file= ' + drive_path + ',format=raw,if=none,id=blobstore', '-device',
+        'file=' + drive_path + ',format=raw,if=none,id=blobstore', '-device',
         'virtio-blk-pci,drive=blobstore', '-monitor', 'none', '-append',
-        'kernel.serial=legacy TERM=dumb', '-machine', 'q35', '-enable-kvm',
+        '"kernel.serial=legacy TERM=dumb"', '-machine', 'q35', '-enable-kvm',
         '-display', 'none', '-cpu', 'host,migratable=no', '-netdev',
         ('user,id=net0,net=192.168.3.0/24,dhcpstart=192.168.3.9,'
          'host=192.168.3.2,hostfwd=tcp::') + portnum + '-:22', '-device',
@@ -431,20 +433,28 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            artifact_prefix=None,
            additional_args=None):
     """LibFuzzerCommon.fuzz override."""
+    logs.log_warn("brand new day")
+    logs.log_warn("qemu command: %s" % self.qemu_command)
+    logs.log_warn("command: %s" % " ".join(self.qemu_command))
     qemu_process = new_process.ProcessRunner(self.qemu_command[0],
                                              self.qemu_command[1:])
     qemu_process.run()
 
     # Don't try to run the fuzzer until we know we can SSH successfully.
+    logs.log_warn("ssh command: %s" % self.ssh_command)
     test_command = self.ssh_command[:]
     test_command.append("ls")
     ssh_test_process = new_process.ProcessRunner(test_command[0],
                                                  test_command[1:])
+
+    logs.log_warn("gonna ssh")
     while True:
       result = ssh_test_process.run_and_wait()
       if (not result.return_code) and (not result.timed_out):
         break
+      logs.log_warn("trying again... %d" % result.return_code)
       time.sleep(2)
+    logs.log_warn("done did ssh")
 
     # Start fuzzing.
     return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
