@@ -24,6 +24,9 @@ import parameterized
 from bot.fuzzers import libfuzzer
 from bot.fuzzers import utils as fuzzer_utils
 from bot.fuzzers.libFuzzer import launcher
+from bot.tasks import fuzz_task
+from datastore import data_types
+from system import new_process
 from system import shell
 from tests.test_libs import helpers as test_helpers
 from tests.test_libs import test_utils
@@ -665,16 +668,63 @@ class TestLauncherMinijail(BaseLauncherTest):
 
 
 @test_utils.integration
+@test_utils.with_cloud_emulators('datastore')
 class TestLauncherFuchsia(BaseLauncherTest):
   """libFuzzer launcher tests (Fuchsia)."""
 
   def setUp(self):
-    super(TestLauncherMinijail, self).setUp()
+    # Cannot call super(TestLauncherfuchsia) because we're using the cloud emulator
+
+    # these are copypasta'd from parent
+    test_helpers.patch_environ(self)
+
+    os.environ['BUILD_DIR'] = DATA_DIRECTORY
+    os.environ['FAIL_RETRIES'] = '1'
+    os.environ['FUZZ_INPUTS_DISK'] = TEMP_DIRECTORY
+    os.environ['FUZZ_TEST_TIMEOUT'] = '4800'
+    os.environ['JOB_NAME'] = 'libfuzzer_asan'
+    os.environ['INPUT_DIR'] = TEMP_DIRECTORY
+
+    test_helpers.patch(self, [
+        'atexit.register',
+        'bot.fuzzers.engine_common.do_corpus_subset',
+        'bot.fuzzers.engine_common.get_merge_timeout',
+        'bot.fuzzers.engine_common.random_choice',
+        'bot.fuzzers.mutator_plugin._download_mutator_plugin_archive',
+        'bot.fuzzers.mutator_plugin._get_mutator_plugins_from_bucket',
+        'bot.fuzzers.libFuzzer.launcher.do_fork',
+        'bot.fuzzers.libFuzzer.launcher.do_ml_rnn_generator',
+        'bot.fuzzers.libFuzzer.launcher.do_mutator_plugin',
+        'bot.fuzzers.libFuzzer.launcher.do_radamsa_generator',
+        'bot.fuzzers.libFuzzer.launcher.do_random_max_length',
+        'bot.fuzzers.libFuzzer.launcher.do_recommended_dictionary',
+        'bot.fuzzers.libFuzzer.launcher.do_value_profile',
+        'bot.fuzzers.libFuzzer.launcher.get_dictionary_analysis_timeout',
+        'os.getpid',
+    ])
+
+    # Prevent errors from occurring after tests complete by preventing the
+    # launcher script from registering exit handlers.
+    self.mock.register.side_effect = lambda func, *args, **kwargs: func
+
+    self.mock.getpid.return_value = 1337
+
+    self.mock._get_mutator_plugins_from_bucket.return_value = []  # pylint: disable=protected-access
+    self.mock.do_corpus_subset.return_value = False
+    self.mock.do_fork.return_value = False
+    self.mock.do_mutator_plugin.return_value = False
+    self.mock.do_ml_rnn_generator.return_value = False
+    self.mock.do_radamsa_generator.return_value = False
+    self.mock.do_random_max_length.return_value = False
+    self.mock.do_recommended_dictionary.return_value = False
+    self.mock.do_value_profile.return_value = False
+    self.mock.get_dictionary_analysis_timeout.return_value = 5
+    self.mock.get_merge_timeout.return_value = 10
+    self.mock.random_choice.side_effect = mock_random_choice
 
     # Set up a Fuzzer.
 
     data_types.Fuzzer(
-        ID=1337,
         revision=1,
         additional_environment_string='FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*',
         builtin=True,
@@ -683,8 +733,9 @@ class TestLauncherFuchsia(BaseLauncherTest):
         jobs=[u'libfuzzer_asan_test_fuzzer'],
         name='libFuzzer',
         source='builtin',  # change to "test@example.com" if it acts up
-        max_testcases=4,
-        data_bundle_name='bundle').put()
+        max_testcases=4).put()
+        
+        #data_bundle_name='bundle').put()
 
     # Set up a FuzzerJob.
 
@@ -740,11 +791,35 @@ class TestLauncherFuchsia(BaseLauncherTest):
                           'ADDITIONAL_ASAN_OPTIONS = quarantine_size_mb=64:strict_memcmp=1:symbolize=0:fast_unwind_on_fatal=0:allocator_release_to_os_interval_ms=500\n')).put()
 
 
-  def test_single_testcase_empty(self):
-    """Tests launcher with an empty testcase."""
-    testcase_path = setup_testcase_and_corpus('empty', 'empty_corpus')
-    output = run_launcher(testcase_path, 'test_fuzzer')
-    self.assertIn(
-        'Running command: {0}/test_fuzzer '
-        '-rss_limit_mb=2048 -timeout=25 -runs=100 '
-        '/empty'.format(DATA_DIRECTORY), output)
+# Potentially two tests:
+# * execute_task does the QEMU booting we expect when called with a Fuchsia fuzzer
+# * when we run this *as well as the launcher* it all works
+  def test_fuzzer_can_boot_and_run(self):
+    """Tests running a single round of fuzzing on a Fuchsia target, using 'ls' in place of a fuzzing command."""
+    #output = run_launcher(testcase_path, 'test_fuzzer')
+    fuzz_task.execute_task('libFuzzer_libfuzzer_asan_test_fuzzer@1337',
+                                     'libfuzzer_asan_test_fuzzer')
+
+    @retry.wrap(retries=SSH_RETRIES, delay=SSH_WAIT, function='_test_qemu_ssh')
+    def _test_qemu_ssh(self):
+      environment.set_value('FUCHSIA_PKEY_PATH', pkey_path)
+      environment.set_value('FUCHSIA_PORTNUM', portnum)
+      if not pkey_path or not portnum:
+        raise Exception('failed to get env vars')
+      ssh_args = [
+        '-i', pkey_path,
+        '-o', 'StrictHostKeyChecking no',
+        '-o', 'UserKnownHostsFile=/dev/null',
+        '-p', portnum,
+        'localhost'
+      ]
+      ssh_test_process = new_process.ProcessRunner('ssh', ssh_args + ['ls'])
+      result = ssh_test_process.run_and_wait()
+      if result.return_code or result.timed_out:
+        raise Exception(
+            'Failed to establish initial SSH connection: ' +
+            str(result.return_code))
+
+    self._test_qemu_ssh()
+
+    self.assertEqual(1,1)
