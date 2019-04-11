@@ -662,3 +662,89 @@ class TestLauncherMinijail(BaseLauncherTest):
     """Tests merging. Wrapper around _test_merge_reductions."""
     mock_get_timeout.return_value = get_fuzz_timeout(1.0)
     self._test_merge_reductions('minijail-merge')
+
+
+@test_utils.integration
+class TestLauncherFuchsia(BaseLauncherTest):
+  """libFuzzer launcher tests (Fuchsia)."""
+
+  def setUp(self):
+    super(TestLauncherMinijail, self).setUp()
+
+    # Set up a Fuzzer.
+
+    data_types.Fuzzer(
+        ID=1337,
+        revision=1,
+        additional_environment_string='FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*',
+        builtin=True,
+        differential=False,
+        file_size='builtin',
+        jobs=[u'libfuzzer_asan_test_fuzzer'],
+        name='libFuzzer',
+        source='builtin',  # change to "test@example.com" if it acts up
+        max_testcases=4,
+        data_bundle_name='bundle').put()
+
+    # Set up a FuzzerJob.
+
+    data_types.FuzzerJob(
+      fuzzer='libFuzzer',
+      job='libfuzzer_asan_test_fuzzer',
+      platform='FUCHSIA',
+      weight=1.0).put()
+
+    # Set up a FuzzTarget (TODO is this necessary? I know these are autogen'd)
+
+    data_types.FuzzTarget(
+      binary='libfuzzer_asan_test_fuzzer',
+      engine='libFuzzer',
+      project='test-project').put()
+
+    # Set up a FuzzTargetJob (TODO is this necessary? I know this is autogen'd)
+
+    data_types.FuzzTargetJob(
+      engine='libFuzzer',
+      fuzz_target_name='libFuzzer_libfuzzer_asan_test_fuzzer',
+      job='libfuzzer_asan_test_fuzzer',
+      weight=1.0).put()
+
+    # Set up a Job
+    data_types.Job(
+      environment_string=('CUSTOM_BINARY = True\n'
+                          'FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*'),
+      name='libfuzzer_asan_test_fuzzer',
+      platform='FUCHSIA',
+      templates=[u'libfuzzer', u'engine_asan']).put()
+
+    # Set up a JobTemplate
+    data_types.JobTemplate(
+      name='libfuzzer',
+      environment_string=('APP_NAME = launcher.py\n'
+                          'MAX_FUZZ_THREADS = 1\n'
+                          'MAX_TESTCASES = 4\n'
+                          'FUZZ_TEST_TIMEOUT = 4800\n'
+                          'TEST_TIMEOUT = 30\n'
+                          'WARMUP_TIMEOUT = 30\n'
+                          'BAD_BUILD_CHECK = False\n'
+                          'THREAD_ALIVE_CHECK_INTERVAL = 1\n'
+                          'REPORT_OOMS_AND_HANGS = True\n'
+                          'CORPUS_FUZZER_NAME_OVERRIDE = libFuzzer\n'
+                          'ENABLE_GESTURES = False\n'
+                          'THREAD_DELAY = 30.0')).put()
+
+    # Set up another JobTemplate
+    data_types.JobTemplate(
+      name='engine_asan',
+      environment_string=('LSAN = True\n'
+                          'ADDITIONAL_ASAN_OPTIONS = quarantine_size_mb=64:strict_memcmp=1:symbolize=0:fast_unwind_on_fatal=0:allocator_release_to_os_interval_ms=500\n')).put()
+
+
+  def test_single_testcase_empty(self):
+    """Tests launcher with an empty testcase."""
+    testcase_path = setup_testcase_and_corpus('empty', 'empty_corpus')
+    output = run_launcher(testcase_path, 'test_fuzzer')
+    self.assertIn(
+        'Running command: {0}/test_fuzzer '
+        '-rss_limit_mb=2048 -timeout=25 -runs=100 '
+        '/empty'.format(DATA_DIRECTORY), output)
