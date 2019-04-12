@@ -21,6 +21,7 @@ import unittest
 
 import parameterized
 
+from base import retry
 from bot.fuzzers import libfuzzer
 from bot.fuzzers import utils as fuzzer_utils
 from bot.fuzzers.libFuzzer import launcher
@@ -34,6 +35,9 @@ from tests.test_libs import test_utils
 TEST_PATH = os.path.abspath(os.path.dirname(__file__))
 TEMP_DIRECTORY = os.path.join(TEST_PATH, 'temp')
 DATA_DIRECTORY = os.path.join(TEST_PATH, 'data')
+
+SSH_RETRIES = 10
+SSH_WAIT = 2
 
 
 def clear_temp_dir():
@@ -672,6 +676,38 @@ class TestLauncherMinijail(BaseLauncherTest):
 class TestLauncherFuchsia(BaseLauncherTest):
   """libFuzzer launcher tests (Fuchsia)."""
 
+  def _mock_setup_build(self, revision=None):
+    os.environ['BUILD_DIR'] = os.path.join(os.cwd(), 'build')
+
+  def _mock_rsync_to_disk(self, _, sync_dir, timeout=None, delete=None):
+    """Mock rsync_to_disk."""
+    if 'quarantine' in sync_dir:
+      corpus_dir = self.quarantine_dir
+    elif 'shared' in sync_dir:
+      corpus_dir = self.shared_corpus_dir
+    else:
+      corpus_dir = self.corpus_dir
+
+    if os.path.exists(sync_dir):
+      shutil.rmtree(sync_dir, ignore_errors=True)
+
+    shutil.copytree(corpus_dir, sync_dir)
+    return True
+
+  def _mock_rsync_from_disk(self, _, sync_dir, timeout=None, delete=None):
+    """Mock rsync_from_disk."""
+    if 'quarantine' in sync_dir:
+      corpus_dir = self.quarantine_dir
+    else:
+      corpus_dir = self.corpus_dir
+
+    if os.path.exists(corpus_dir):
+      shutil.rmtree(corpus_dir, ignore_errors=True)
+
+    shutil.copytree(sync_dir, corpus_dir)
+    return True
+
+
   def setUp(self):
     # Cannot call super(TestLauncherfuchsia) because we're using the cloud emulator
 
@@ -684,6 +720,8 @@ class TestLauncherFuchsia(BaseLauncherTest):
     os.environ['FUZZ_TEST_TIMEOUT'] = '4800'
     os.environ['JOB_NAME'] = 'libfuzzer_asan'
     os.environ['INPUT_DIR'] = TEMP_DIRECTORY
+
+    os.environ['FAIL_WAIT'] = "1.0"
 
     test_helpers.patch(self, [
         'atexit.register',
@@ -721,6 +759,28 @@ class TestLauncherFuchsia(BaseLauncherTest):
     self.mock.get_dictionary_analysis_timeout.return_value = 5
     self.mock.get_merge_timeout.return_value = 10
     self.mock.random_choice.side_effect = mock_random_choice
+
+    # some copypastas from corpus_pruning_task_test
+    test_helpers.patch(self, [
+        'bot.fuzzers.engine_common.unpack_seed_corpus_if_needed',
+        'bot.tasks.task_creation.create_tasks',
+        'bot.tasks.setup.update_fuzzer_and_data_bundles',
+        'build_management.build_manager.setup_build',
+        'fuzzing.corpus_manager.backup_corpus',
+        'fuzzing.corpus_manager.GcsCorpus.rsync_to_disk',
+        'fuzzing.corpus_manager.FuzzTargetCorpus.rsync_from_disk',
+        'datastore.ndb.transaction',
+        'google_cloud_utils.blobs.write_blob',
+        'google_cloud_utils.storage.write_data',
+    ])
+
+    test_helpers.patch_environ(self)
+    self.mock.setup_build.side_effect = self._mock_setup_build
+    self.mock.rsync_to_disk.side_effect = self._mock_rsync_to_disk
+    self.mock.rsync_from_disk.side_effect = self._mock_rsync_from_disk
+    self.mock.update_fuzzer_and_data_bundles.return_value = True
+    self.mock.write_blob.return_value = 'key'
+    self.mock.backup_corpus.return_value = 'backup_link'
 
     # Set up a Fuzzer.
 
@@ -790,18 +850,8 @@ class TestLauncherFuchsia(BaseLauncherTest):
       environment_string=('LSAN = True\n'
                           'ADDITIONAL_ASAN_OPTIONS = quarantine_size_mb=64:strict_memcmp=1:symbolize=0:fast_unwind_on_fatal=0:allocator_release_to_os_interval_ms=500\n')).put()
 
-
-# Potentially two tests:
-# * execute_task does the QEMU booting we expect when called with a Fuchsia fuzzer
-# * when we run this *as well as the launcher* it all works
-  def test_fuzzer_can_boot_and_run(self):
-    """Tests running a single round of fuzzing on a Fuchsia target, using 'ls' in place of a fuzzing command."""
-    #output = run_launcher(testcase_path, 'test_fuzzer')
-    fuzz_task.execute_task('libFuzzer_libfuzzer_asan_test_fuzzer@1337',
-                                     'libfuzzer_asan_test_fuzzer')
-
-    @retry.wrap(retries=SSH_RETRIES, delay=SSH_WAIT, function='_test_qemu_ssh')
-    def _test_qemu_ssh(self):
+  @retry.wrap(retries=SSH_RETRIES, delay=SSH_WAIT, function='_test_qemu_ssh')
+  def _test_qemu_ssh(self):
       environment.set_value('FUCHSIA_PKEY_PATH', pkey_path)
       environment.set_value('FUCHSIA_PORTNUM', portnum)
       if not pkey_path or not portnum:
@@ -820,6 +870,16 @@ class TestLauncherFuchsia(BaseLauncherTest):
             'Failed to establish initial SSH connection: ' +
             str(result.return_code))
 
+
+# Potentially two tests:
+# * execute_task does the QEMU booting we expect when called with a Fuchsia fuzzer
+# * when we run this *as well as the launcher* it all works
+  def test_fuzzer_can_boot_and_run(self):
+    """Tests running a single round of fuzzing on a Fuchsia target, using 'ls' in place of a fuzzing command."""
+    #output = run_launcher(testcase_path, 'test_fuzzer')
+    print("lol what up")
+    fuzz_task.execute_task('libFuzzer',
+                                     'libfuzzer_asan_test_fuzzer')
     self._test_qemu_ssh()
 
     self.assertEqual(1,1)

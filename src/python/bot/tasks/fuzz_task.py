@@ -1237,6 +1237,7 @@ def process_crashes(crashes, context):
 
 def execute_task(fuzzer_name, job_type):
   """Runs the given fuzzer for one round."""
+  print("we're in execute task")
   failure_wait_interval = environment.get_value('FAIL_WAIT')
 
   # Update LSAN local blacklist with global blacklist.
@@ -1249,8 +1250,12 @@ def execute_task(fuzzer_name, job_type):
   trials.setup_additional_args_for_app()
 
   # Ensure that that the fuzzer still exists.
+  print("setup bundles")
   logs.log('Setting up fuzzer and data bundles.')
+  print("fuzzer_name " + fuzzer_name)
+  print("data_types.Fuzzer.name: " +str(data_types.Fuzzer.name))
   fuzzer = data_types.Fuzzer.query(data_types.Fuzzer.name == fuzzer_name).get()
+  print("fuzzer get! "  + str(fuzzer))
   if not fuzzer or not setup.update_fuzzer_and_data_bundles(fuzzer_name):
     _track_fuzzer_run_result(fuzzer_name, 0, 0,
                              FuzzErrorCode.FUZZER_SETUP_FAILED)
@@ -1258,12 +1263,14 @@ def execute_task(fuzzer_name, job_type):
 
     # Artifical sleep to slow down continuous failed fuzzer runs if the bot is
     # using command override for task execution.
+    print("are we stuck in a sleep loop")
     time.sleep(failure_wait_interval)
     return
 
   # Set up a custom or regular build based on revision. By default, fuzzing
   # is done on trunk build (using revision=None). Otherwise, a job definition
   # can provide a revision to use via |APP_REVISION|.
+  print("settin up build")
   build_manager.setup_build(revision=environment.get_value('APP_REVISION'))
 
   # Check if we have an application path. If not, our build failed
@@ -1274,6 +1281,7 @@ def execute_task(fuzzer_name, job_type):
                              FuzzErrorCode.BUILD_SETUP_FAILED)
     return
 
+  print("checkin for bad build")
   # Check if we have a bad build, i.e. one that crashes on startup.
   # If yes, bail out.
   logs.log('Checking for bad build.')
@@ -1317,6 +1325,8 @@ def execute_task(fuzzer_name, job_type):
   test_timeout = set_test_timeout(base_test_timeout, timeout_multiplier)
   thread_timeout = test_timeout
 
+  print("blah stuff")
+
   # Determine number of testcases to process.
   testcase_count = environment.get_value('MAX_TESTCASES')
 
@@ -1327,8 +1337,10 @@ def execute_task(fuzzer_name, job_type):
 
   # Run the fuzzer to generate testcases. If error occurred while trying
   # to run the fuzzer, bail out.
+  print("fuchsia o'clock")
   if platform == 'FUCHSIA':
     fuchsia.device.qemu_setup()
+  print("done dl'ing fuchsia")
   (error_occurred, testcase_file_paths, generated_testcase_count,
    sync_corpus_directory,
    fuzzer_metadata) = run_fuzzer(fuzzer, fuzzer_directory, testcase_directory,
