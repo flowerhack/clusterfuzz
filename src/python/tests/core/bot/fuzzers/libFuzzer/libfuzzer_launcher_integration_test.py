@@ -27,6 +27,7 @@ from bot.fuzzers import utils as fuzzer_utils
 from bot.fuzzers.libFuzzer import launcher
 from bot.tasks import fuzz_task
 from datastore import data_types
+from system import environment
 from system import new_process
 from system import shell
 from tests.test_libs import helpers as test_helpers
@@ -860,7 +861,7 @@ class TestLauncherFuchsia(BaseLauncherTest):
         '-i', pkey_path,
         '-o', 'StrictHostKeyChecking no',
         '-o', 'UserKnownHostsFile=/dev/null',
-        '-p', portnum,
+        '-p', str(portnum),
         'localhost'
       ]
       ssh_test_process = new_process.ProcessRunner('ssh', ssh_args + ['ls'])
