@@ -1091,6 +1091,8 @@ def setup_regular_build(revision):
     logs.log_error('Error getting release build urls for job %s.' % job_type)
     return None
 
+  print("setup 10")
+
   release_build_url = revisions.find_build_url(release_build_bucket_path,
                                                release_build_urls, revision)
   if not release_build_url:
@@ -1101,6 +1103,7 @@ def setup_regular_build(revision):
     return setup_trunk_build()
 
   base_build_dir = _base_build_dir(release_build_bucket_path)
+  print("setup 11")
 
   build_class = RegularBuild
   if environment.is_trusted_host():
@@ -1108,6 +1111,7 @@ def setup_regular_build(revision):
     build_class = build_setup_host.RemoteRegularBuild
 
   target_weights = fuzzer_selection.get_fuzz_target_weights()
+  print("setup 12")
   build = build_class(
       base_build_dir,
       revision,
@@ -1245,18 +1249,25 @@ def setup_system_binary():
 def setup_build(revision=0):
   """Set up a custom or regular build based on revision."""
   # For custom binaries we always use the latest version. Revision is ignored.
+  print("setup 1")
   custom_binary = environment.get_value('CUSTOM_BINARY')
   if custom_binary:
     return setup_custom_binary()
+
+  print("setup 2")
 
   # In this case, we assume the build is already installed on the system.
   system_binary = environment.get_value('SYSTEM_BINARY_DIR')
   if system_binary:
     return setup_system_binary()
 
+  print("setup 3")
+
   # If no revision is provided, we default to a trunk build.
   if not revision:
     return setup_trunk_build()
+
+  print("setup 4")
 
   # Setup regular build with revision.
   return setup_regular_build(revision)

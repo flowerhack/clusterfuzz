@@ -301,6 +301,7 @@ class _TrackFuzzTime(object):
 
 def _track_fuzzer_run_result(fuzzer_name, generated_testcase_count,
                              expected_testcase_count, return_code):
+  print("hi")
   """Track fuzzer run result"""
   if expected_testcase_count > 0:
     ratio = float(generated_testcase_count) / expected_testcase_count
@@ -316,6 +317,7 @@ def _track_fuzzer_run_result(fuzzer_name, generated_testcase_count,
   max_int32 = 2**31 - 1
 
   return_code = int(clamp(return_code, min_int32, max_int32))
+  print("hihi")
 
   monitoring_metrics.FUZZER_RETURN_CODE_COUNT.increment({
       'fuzzer': fuzzer_name,
@@ -1272,6 +1274,7 @@ def execute_task(fuzzer_name, job_type):
   # can provide a revision to use via |APP_REVISION|.
   print("settin up build")
   build_manager.setup_build(revision=environment.get_value('APP_REVISION'))
+  print("done settin up build")
 
   # Check if we have an application path. If not, our build failed
   # to setup correctly.
