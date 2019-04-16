@@ -1279,9 +1279,11 @@ def execute_task(fuzzer_name, job_type):
   # Check if we have an application path. If not, our build failed
   # to setup correctly.
   app_path = environment.get_value('APP_PATH')
+  print("APP PATH IS " + str(app_path))
   if not app_path:
     _track_fuzzer_run_result(fuzzer_name, 0, 0,
                              FuzzErrorCode.BUILD_SETUP_FAILED)
+    print("we sure done track it")
     return
 
   print("checkin for bad build")
