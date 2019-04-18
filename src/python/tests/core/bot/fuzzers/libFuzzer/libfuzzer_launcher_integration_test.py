@@ -86,7 +86,8 @@ def setup_testcase_and_corpus(testcase, corpus, fuzz=False):
 def run_launcher(*args):
   """Run launcher.py."""
   string_io = StringIO.StringIO()
-
+  print("launcher fiesta")
+  print("args are: " + str(args))
   with mock.patch('sys.stdout', string_io):
     launcher.main(['launcher.py'] + list(args))
 
@@ -370,6 +371,7 @@ class TestLauncher(BaseLauncherTest):
   def test_analyze_dict(self, mock_get_timeout,
                         mock_parse_recommended_dictionary):
     """Tests recommended dictionary analysis."""
+    print("part 1")
     test_helpers.patch(self, [
         'bot.fuzzers.dictionary_manager.DictionaryManager.'
         'update_recommended_dictionary',
@@ -383,11 +385,14 @@ class TestLauncher(BaseLauncherTest):
         '"BEET"',
         '"USELESS_3"',
     ])
+    print("part 2")
     mock_get_timeout.return_value = get_fuzz_timeout(5.0)
 
     testcase_path = setup_testcase_and_corpus(
         'empty', 'corpus_with_some_files', fuzz=True)
+    print("testcase path: " + testcase_path)
     run_launcher(testcase_path, 'analyze_dict_fuzzer')
+    print("part 3")
 
     expected_recommended_dictionary = set([
         '"APPLE"',
@@ -824,7 +829,9 @@ class TestLauncherFuchsia(BaseLauncherTest):
     # Set up a Job
     data_types.Job(
       environment_string=('CUSTOM_BINARY = True\n'
-                          'FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*'),
+                          'FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*\n'
+                          'QUEUE_OVERRIDE=FUCHSIA\n'
+                          'OS_OVERRIDE=FUCHSIA'),
       name='libfuzzer_asan_test_fuzzer',
       platform='FUCHSIA',
       templates=[u'libfuzzer', u'engine_asan']).put()
@@ -851,14 +858,28 @@ class TestLauncherFuchsia(BaseLauncherTest):
       environment_string=('LSAN = True\n'
                           'ADDITIONAL_ASAN_OPTIONS = quarantine_size_mb=64:strict_memcmp=1:symbolize=0:fast_unwind_on_fatal=0:allocator_release_to_os_interval_ms=500\n')).put()
 
+  environment.set_bot_environment()
+  environment.set_value('QUEUE_OVERRIDE', 'FUCHSIA')
+  environment.set_value('OS_OVERRIDE', 'FUCHSIA')
+  resources_dir = environment.get_value('RESOURCES_DIR')
+  if not resources_dir:
+    raise Exception('Could not find RESOURCES_DIR')
+  fuchsia_resources_dir = os.path.join(resources_dir, 'fuchsia')
+  pkey_path = os.path.join(fuchsia_resources_dir, '.ssh', 'pkey')
+  portnum = '56339'
+  environment.set_value('FUCHSIA_PKEY_PATH', pkey_path)
+  environment.set_value('FUCHSIA_PORTNUM', portnum)
+
+  # is set_bot_environment just not called by these tests?
+
   @retry.wrap(retries=SSH_RETRIES, delay=SSH_WAIT, function='_test_qemu_ssh')
   def _test_qemu_ssh(self):
-      environment.set_value('FUCHSIA_PKEY_PATH', pkey_path)
-      environment.set_value('FUCHSIA_PORTNUM', portnum)
+      print("test qemu!!!")
+      
       if not pkey_path or not portnum:
         raise Exception('failed to get env vars')
       ssh_args = [
-        '-i', pkey_path,
+        '-i', str(pkey_path),
         '-o', 'StrictHostKeyChecking no',
         '-o', 'UserKnownHostsFile=/dev/null',
         '-p', str(portnum),

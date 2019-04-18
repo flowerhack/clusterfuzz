@@ -337,10 +337,10 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
           'FUCHSIA_PKEY_PATH and/or FUCHSIA_PORTNUM was not set')
     # yapf: disable
     self.ssh_args = [
-        '-i', fuchsia_pkey_path,
+        '-i', str(fuchsia_pkey_path),
         '-o', 'StrictHostKeyChecking no',
         '-o', 'UserKnownHostsFile=/dev/null',
-        '-p', fuchsia_portnum,
+        '-p', str(fuchsia_portnum),
         'localhost'
     ]
     # yapf: enable
@@ -360,7 +360,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            extra_env=None):
     """LibFuzzerCommon.fuzz override."""
     self._test_qemu_ssh()
-    LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
+    return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
                          artifact_prefix, additional_args)
 
   def run_single_testcase(self,
@@ -371,7 +371,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     pass
 
   def ssh_command(self, *args):
-    return ['ssh'] + self.ssh_root + list(args)
+    return ['ssh'] + self.ssh_args + list(args)
 
   @retry.wrap(retries=SSH_RETRIES, delay=SSH_WAIT, function='_test_qemu_ssh')
   def _test_qemu_ssh(self):
@@ -564,8 +564,9 @@ def get_runner(fuzzer_path, temp_dir=None):
       shutil.copy(os.path.realpath('/bin/sh'), os.path.join(minijail_bin, 'sh'))
 
     runner = MinijailLibFuzzerRunner(fuzzer_path, minijail_chroot)
-  elif environment.platform() == 'FUCHSIA':
-    runner = FuchsiaQemuLibFuzzerRunner(fuzzer_path)
+  #elif environment.platform() == 'FUCHSIA':
+  #  print("we're using hte fuchsia path?")
+  #  runner = FuchsiaQemuLibFuzzerRunner(fuzzer_path)
   else:
     runner = LibFuzzerRunner(fuzzer_path)
 

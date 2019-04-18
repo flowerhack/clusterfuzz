@@ -753,6 +753,7 @@ def move_mergeable_units(merge_directory, corpus_directory):
 
 def main(argv):
   """Run libFuzzer as specified by argv."""
+  print("happening????")
   atexit.register(fuzzer_utils.cleanup)
 
   # Initialize variables.

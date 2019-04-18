@@ -1278,8 +1278,12 @@ def execute_task(fuzzer_name, job_type):
 
   # Check if we have an application path. If not, our build failed
   # to setup correctly.
-  app_path = environment.get_value('APP_PATH')
-  print("APP PATH IS " + str(app_path))
+
+  logs.log('getting app path')
+  app_path = environment.get_value('APP_PATH', '/usr/local/google/home/flowerhack/dragonroost2/clusterfuzz/src/python/bot/fuzzers/libFuzzer/launcher.py')
+  # TODO have this infer app_path somehow?
+  if platform == 'FUCHSIA':
+    app_path = '/usr/local/google/home/flowerhack/deerdeer/clusterfuzz/src/python/bot/fuzzers/libFuzzer/launcher.py'
   if not app_path:
     _track_fuzzer_run_result(fuzzer_name, 0, 0,
                              FuzzErrorCode.BUILD_SETUP_FAILED)
@@ -1294,7 +1298,9 @@ def execute_task(fuzzer_name, job_type):
   is_bad_build = tests.check_for_bad_build(job_type, crash_revision)
   _track_build_run_result(job_type, crash_revision, is_bad_build)
   if is_bad_build:
+    logs.log("bad build")
     return
+  print("build is fine")
 
   # Helper variables.
   bot_name = environment.get_value('BOT_NAME')
@@ -1310,12 +1316,15 @@ def execute_task(fuzzer_name, job_type):
   # because of dependencies.
   testcase_directory = environment.get_value('FUZZ_INPUTS')
   data_directory = setup.get_data_bundle_directory(fuzzer_name)
-  if not data_directory:
+  if (not data_directory) and (not platform == 'FUCHSIA'):
+    print("we're upset about a data dir apparently?")
+    print(platform)
     _track_fuzzer_run_result(fuzzer_name, 0, 0,
                              FuzzErrorCode.DATA_BUNDLE_SETUP_FAILED)
     logs.log_error('Unable to setup data bundle %s.' % data_bundle_name)
     return
 
+  print("timeout multi")
   # Pick up a timeout multiplier.
   timeout_multiplier = pick_timeout_multiplier()
 

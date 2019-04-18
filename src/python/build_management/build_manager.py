@@ -1191,6 +1191,8 @@ def setup_custom_binary():
   if build.setup():
     return build
 
+  logs.log_error("build didn't work!!!")
+
   return None
 
 
