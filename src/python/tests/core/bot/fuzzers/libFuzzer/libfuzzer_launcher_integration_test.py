@@ -26,6 +26,7 @@ from bot.fuzzers import libfuzzer
 from bot.fuzzers import utils as fuzzer_utils
 from bot.fuzzers.libFuzzer import launcher
 from bot.tasks import fuzz_task
+from platforms import fuchsia
 from datastore import data_types
 from system import environment
 from system import new_process
@@ -900,8 +901,10 @@ class TestLauncherFuchsia(BaseLauncherTest):
     """Tests running a single round of fuzzing on a Fuchsia target, using 'ls' in place of a fuzzing command."""
     #output = run_launcher(testcase_path, 'test_fuzzer')
     print("lol what up")
-    fuzz_task.execute_task('libFuzzer',
-                                     'libfuzzer_asan_test_fuzzer')
+    fuchsia.device.qemu_setup()
+    testcase_path = setup_testcase_and_corpus('fuchsia_party', 'empty_corpus')
+    output = run_launcher(testcase_path, 'test_fuzzer')
+    print("testageag")
     self._test_qemu_ssh()
 
     self.assertEqual(1,1)
