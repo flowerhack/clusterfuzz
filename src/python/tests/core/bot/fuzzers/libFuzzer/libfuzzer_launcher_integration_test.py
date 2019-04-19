@@ -92,6 +92,10 @@ def run_launcher(*args):
   with mock.patch('sys.stdout', string_io):
     launcher.main(['launcher.py'] + list(args))
 
+  print("this is what we got:\n")
+  print(string_io.getvalue())
+
+
   return string_io.getvalue()
 
 
@@ -729,6 +733,7 @@ class TestLauncherFuchsia(BaseLauncherTest):
     os.environ['INPUT_DIR'] = TEMP_DIRECTORY
 
     os.environ['FAIL_WAIT'] = "1.0"
+    os.environ['FUCHSIA_RESOURCES_URL'] = 'gs://fuchsia-on-clusterfuzz-v2/*'
 
     test_helpers.patch(self, [
         'atexit.register',
@@ -902,9 +907,12 @@ class TestLauncherFuchsia(BaseLauncherTest):
     #output = run_launcher(testcase_path, 'test_fuzzer')
     print("lol what up")
     fuchsia.device.qemu_setup()
-    testcase_path = setup_testcase_and_corpus('fuchsia_party', 'empty_corpus')
+    print("we got set up")
+    # aaaa seems to be a dummy fuzzer?
+    testcase_path = setup_testcase_and_corpus(
+        'aaaa', 'empty_corpus', fuzz=True)
     output = run_launcher(testcase_path, 'test_fuzzer')
     print("testageag")
-    self._test_qemu_ssh()
+    #self._test_qemu_ssh()
 
     self.assertEqual(1,1)

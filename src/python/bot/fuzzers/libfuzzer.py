@@ -123,6 +123,7 @@ class LibFuzzerCommon(object):
     Returns:
       A process.ProcessResult.
     """
+    print("base fuzz\n")
     max_total_time = self.get_max_total_time(fuzz_timeout)
     assert max_total_time > 0
 
@@ -315,6 +316,7 @@ class LibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            additional_args=None,
            extra_env=None):
     """LibFuzzerCommon.fuzz override."""
+    print("libfuzzer runner\n")
     additional_args = copy.copy(additional_args)
     if additional_args is None:
       additional_args = []
@@ -359,9 +361,11 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            additional_args=None,
            extra_env=None):
     """LibFuzzerCommon.fuzz override."""
-    self._test_qemu_ssh()
-    return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
-                         artifact_prefix, additional_args)
+    print("fuchsia fuzz\n")
+    result = self._test_qemu_ssh()
+    return result
+    #return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
+    #                     artifact_prefix, additional_args)
 
   def run_single_testcase(self,
                           testcase_path,
@@ -383,6 +387,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
       raise fuchsia.errors.FuchsiaConnectionError(
           'Failed to establish initial SSH connection: ' +
           str(result.return_code))
+    return result
 
 
 class MinijailLibFuzzerRunner(engine_common.MinijailEngineFuzzerRunner,
@@ -452,6 +457,7 @@ class MinijailLibFuzzerRunner(engine_common.MinijailEngineFuzzerRunner,
            additional_args=None,
            extra_env=None):
     """LibFuzzerCommon.fuzz override."""
+    print("minijail fuzz\n")
     corpus_directories = self._get_chroot_corpus_paths(corpus_directories)
     return LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
                                 artifact_prefix, additional_args, extra_env)
@@ -564,9 +570,9 @@ def get_runner(fuzzer_path, temp_dir=None):
       shutil.copy(os.path.realpath('/bin/sh'), os.path.join(minijail_bin, 'sh'))
 
     runner = MinijailLibFuzzerRunner(fuzzer_path, minijail_chroot)
-  #elif environment.platform() == 'FUCHSIA':
-  #  print("we're using hte fuchsia path?")
-  #  runner = FuchsiaQemuLibFuzzerRunner(fuzzer_path)
+  elif environment.platform() == 'FUCHSIA':
+    print("we're using hte fuchsia path?")
+    runner = FuchsiaQemuLibFuzzerRunner(fuzzer_path)
   else:
     runner = LibFuzzerRunner(fuzzer_path)
 
