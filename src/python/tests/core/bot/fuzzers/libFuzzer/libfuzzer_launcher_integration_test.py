@@ -471,27 +471,27 @@ class TestLauncherMinijail(BaseLauncherTest):
     super(TestLauncherMinijail, self).setUp()
     os.environ['USE_MINIJAIL'] = 'True'
 
-  def test_single_testcase_empty(self):
-    """Tests launcher with an empty testcase."""
-    testcase_path = setup_testcase_and_corpus('empty', 'empty_corpus')
-    output = run_launcher(testcase_path, 'test_fuzzer')
-    self.assertIn(
-        'Running command: {0}/test_fuzzer '
-        '-rss_limit_mb=2048 -timeout=25 -runs=100 '
-        '/empty'.format(DATA_DIRECTORY), output)
+  #def test_single_testcase_empty(self):
+  #  """Tests launcher with an empty testcase."""
+  #  testcase_path = setup_testcase_and_corpus('empty', 'empty_corpus')
+  #  output = run_launcher(testcase_path, 'test_fuzzer')
+  #  self.assertIn(
+  #      'Running command: {0}/test_fuzzer '
+  #      '-rss_limit_mb=2048 -timeout=25 -runs=100 '
+  #      '/empty'.format(DATA_DIRECTORY), output)
 
-  def test_single_testcase_crash(self):
-    """Tests launcher with a crashing testcase."""
-    testcase_path = setup_testcase_and_corpus('crash', 'empty_corpus')
-    output = run_launcher(testcase_path, 'test_fuzzer')
-    self.assertIn(
-        'Running command: {0}/test_fuzzer '
-        '-rss_limit_mb=2048 -timeout=25 -runs=100 '
-        '/crash'.format(DATA_DIRECTORY), output)
+  #def test_single_testcase_crash(self):
+  #  """Tests launcher with a crashing testcase."""
+  #  testcase_path = setup_testcase_and_corpus('crash', 'empty_corpus')
+  #  output = run_launcher(testcase_path, 'test_fuzzer')
+  #  self.assertIn(
+  #      'Running command: {0}/test_fuzzer '
+  #      '-rss_limit_mb=2048 -timeout=25 -runs=100 '
+  #      '/crash'.format(DATA_DIRECTORY), output)
 
-    self.assertIn(
-        'ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000',
-        output)
+  #  self.assertIn(
+  #      'ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000',
+  #      output)
 
   @mock.patch('bot.fuzzers.libFuzzer.launcher.get_fuzz_timeout')
   def test_fuzz_no_crash(self, mock_get_timeout):
@@ -799,14 +799,15 @@ class TestLauncherFuchsia(BaseLauncherTest):
     environment.set_bot_environment()
     environment.set_value('QUEUE_OVERRIDE', 'FUCHSIA')
     environment.set_value('OS_OVERRIDE', 'FUCHSIA')
-    #resources_dir = environment.get_value('RESOURCES_DIR')
-    #if not resources_dir:
-    #  raise Exception('Could not find RESOURCES_DIR')
-    #fuchsia_resources_dir = os.path.join(resources_dir, 'fuchsia')
-    #pkey_path = os.path.join(fuchsia_resources_dir, '.ssh', 'pkey')
-    #portnum = '56339'
-    #environment.set_value('FUCHSIA_PKEY_PATH', pkey_path)
-    #environment.set_value('FUCHSIA_PORTNUM', portnum)
+    os.environ['FUCHSIA_RESOURCES_URL'] = 'gs://fuchsia-on-clusterfuzz-v2/*'
+    resources_dir = environment.get_value('RESOURCES_DIR')
+    if not resources_dir:
+      raise Exception('Could not find RESOURCES_DIR')
+    fuchsia_resources_dir = os.path.join(resources_dir, 'fuchsia')
+    pkey_path = os.path.join(fuchsia_resources_dir, '.ssh', 'pkey')
+    portnum = '56339'
+    environment.set_value('FUCHSIA_PKEY_PATH', pkey_path)
+    environment.set_value('FUCHSIA_PORTNUM', portnum)
 
     # we redefine _test_qemu_ssh here. there may not be a need? make sure we call run_launcher with the necessary arguments?
     # oh wtf. we manually call fuchsia.device.qemu_setup so 
@@ -824,12 +825,12 @@ class TestLauncherFuchsia(BaseLauncherTest):
     """Tests running a single round of fuzzing on a Fuchsia target, using 'ls' in place of a fuzzing command."""
     #output = run_launcher(testcase_path, 'test_fuzzer')
     #print("lol what up")
-    #fuchsia.device.qemu_setup()
+    fuchsia.device.qemu_setup()
     #print("we got set up")
     # aaaa seems to be a dummy fuzzer?
-    #testcase_path = setup_testcase_and_corpus(
-    #    'aaaa', 'empty_corpus', fuzz=True)
-    #output = run_launcher(testcase_path, 'test_fuzzer')
+    testcase_path = setup_testcase_and_corpus(
+        'aaaa', 'empty_corpus', fuzz=True)
+    output = run_launcher(testcase_path, 'test_fuzzer')
     #print("testageag")
 
     self.assertEqual(1,1)
