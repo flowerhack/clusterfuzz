@@ -799,9 +799,9 @@ class TestLauncherFuchsia(BaseLauncherTest):
     environment.set_bot_environment()
     environment.set_value('QUEUE_OVERRIDE', 'FUCHSIA')
     environment.set_value('OS_OVERRIDE', 'FUCHSIA')
-    resources_dir = environment.get_value('RESOURCES_DIR')
-    if not resources_dir:
-      raise Exception('Could not find RESOURCES_DIR')
+    #resources_dir = environment.get_value('RESOURCES_DIR')
+    #if not resources_dir:
+    #  raise Exception('Could not find RESOURCES_DIR')
     #fuchsia_resources_dir = os.path.join(resources_dir, 'fuchsia')
     #pkey_path = os.path.join(fuchsia_resources_dir, '.ssh', 'pkey')
     #portnum = '56339'
@@ -812,6 +812,10 @@ class TestLauncherFuchsia(BaseLauncherTest):
     # oh wtf. we manually call fuchsia.device.qemu_setup so 
     # (are multiple launchers getting launched? multiple runners? etc? the numbering here confuses me) NEED TO CLARIFY THIS
     # leave as-is for now, then change
+
+  def tearDown(self):
+    environment.set_value('QUEUE_OVERRIDE', '')
+    environment.set_value('OS_OVERRIDE', '')
 
   # Potentially two tests:
   # * execute_task does the QEMU booting we expect when called with a Fuchsia fuzzer
