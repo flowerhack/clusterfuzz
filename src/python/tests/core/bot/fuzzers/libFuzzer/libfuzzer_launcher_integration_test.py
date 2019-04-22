@@ -670,7 +670,7 @@ class TestLauncherMinijail(BaseLauncherTest):
 # TODO lol do a fmt on all this
 @test_utils.integration
 @test_utils.with_cloud_emulators('datastore')  # TODO: is this needed?
-class TestLauncherZFuchsia(BaseLauncherTest):
+class TestLauncherFuchsia(BaseLauncherTest):
   """libFuzzer launcher tests (Fuchsia)."""
 
   # TODO  _mock_setup_build
@@ -683,8 +683,8 @@ class TestLauncherZFuchsia(BaseLauncherTest):
     
 
     # TODO needed?
-    SSH_RETRIES = 10
-    SSH_WAIT = 2
+    #SSH_RETRIES = 10
+    #SSH_WAIT = 2
 
     # following are IFF we actually do need the cloud emulator in the end
     # test_helpers.patch_environ(self)
@@ -695,8 +695,8 @@ class TestLauncherZFuchsia(BaseLauncherTest):
     # JOB_NAME = libfuzzer_asan
     # input dir...
 
-    os.environ['FAIL_WAIT'] = '1.0'
-    os.environ['FUCHSIA_RESOURCES_URL'] = 'gs://fuchsia-on-clusterfuzz-v2/*'
+    #os.environ['FAIL_WAIT'] = '1.0'
+    #os.environ['FUCHSIA_RESOURCES_URL'] = 'gs://fuchsia-on-clusterfuzz-v2/*'
 
     # test_helpers patch...
     # ... atexit.register
