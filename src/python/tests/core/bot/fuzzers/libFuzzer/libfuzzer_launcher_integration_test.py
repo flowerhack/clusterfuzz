@@ -24,6 +24,10 @@ import parameterized
 from bot.fuzzers import libfuzzer
 from bot.fuzzers import utils as fuzzer_utils
 from bot.fuzzers.libFuzzer import launcher
+from datastore import data_types
+from platforms import fuchsia
+from system import environment
+from system import new_process
 from system import shell
 from tests.test_libs import helpers as test_helpers
 from tests.test_libs import test_utils
@@ -662,3 +666,167 @@ class TestLauncherMinijail(BaseLauncherTest):
     """Tests merging. Wrapper around _test_merge_reductions."""
     mock_get_timeout.return_value = get_fuzz_timeout(1.0)
     self._test_merge_reductions('minijail-merge')
+
+# TODO lol do a fmt on all this
+@test_utils.integration
+@test_utils.with_cloud_emulators('datastore')  # TODO: is this needed?
+class TestLauncherFuchsia(BaseLauncherTest):
+  """libFuzzer launcher tests (Fuchsia)."""
+
+  # TODO  _mock_setup_build
+  # TODO _mock_rsync_to_disk
+  # TODO mock_rsync_from_disk
+
+  def setUp(self):
+    # Cannot call super(TestLauncherFuchsia) because we're using the cloud emulator
+    # TODO: do we need the cloud emulator?
+    
+
+    # TODO needed?
+    SSH_RETRIES = 10
+    SSH_WAIT = 2
+
+    # following are IFF we actually do need the cloud emulator in the end
+    # test_helpers.patch_environ(self)
+    # os.environ['BUILD_DIR']
+    # os.environ['FAIL_RETRIES'] = '1'
+    # fuzz inputs disk...
+    # fuzz test timeout...
+    # JOB_NAME = libfuzzer_asan
+    # input dir...
+
+    os.environ['FAIL_WAIT'] = '1.0'
+    os.environ['FUCHSIA_RESOURCES_URL'] = 'gs://fuchsia-on-clusterfuzz-v2/*'
+
+    # test_helpers patch...
+    # ... atexit.register
+    # ... do corpus subset
+    # ... get merge timeout
+    # ... random_choice
+    # ... download mutator plugin archive
+    # ... get mutator plugins from bucket
+    # ... do fork
+    # ... do ml rnn generator
+    # ... do mutator plugin
+    # ... do radamsa generator
+    # ... do random max len
+    # ... do value profile
+    # ... get dict analysis timeout
+    # os.getpid
+
+    # prevent errors from occurring after tests by preventing launcher script from registering exit handlers
+    # mock register side effect, etc
+
+    # i also copypasta'd from corpus_pruning
+    # patching unpack seed corpus, create tasks, update fuzzer and data bundles, etc
+
+    # and also mocking setup_build side effect, rsync to disk side effect, etc
+
+    # Set up a Fuzzer.
+
+    data_types.Fuzzer(
+      revision=1,
+      additional_environment_string='FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*',
+      builtin=True,
+      differential=False,
+      file_size='builtin',
+      jobs=[u'libfuzzer_asan_test_fuzzer'],
+      name='libFuzzer',
+      source='builtin',  # change to "test@example.com" if it acts up
+      max_testcases=4).put()
+
+    # Set up a FuzzerJob.
+
+    data_types.FuzzerJob(
+      fuzzer='libFuzzer',
+      job='libfuzzer_asan_test_fuzzer',
+      platform='FUCHSIA',
+      weight=1.0).put()
+
+    # Set up a FuzzTarget (TODO is this necessary? I know these are autogen'd)
+
+    data_types.FuzzTarget(
+      binary='libfuzzer_asan_test_fuzzer',
+      engine='libFuzzer',
+      project='test-project').put()
+
+    # Set up a FuzzTargetJob (TODO is this necessary? I know this is autogen'd)
+
+    data_types.FuzzTargetJob(
+      engine='libFuzzer',
+      fuzz_target_name='libFuzzer_libfuzzer_asan_test_fuzzer',
+      job='libfuzzer_asan_test_fuzzer',
+      weight=1.0).put()
+
+    # Set up a Job
+    data_types.Job(
+      environment_string=('CUSTOM_BINARY = True\n'
+                        'FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*\n'
+                        'QUEUE_OVERRIDE=FUCHSIA\n'
+                        'OS_OVERRIDE=FUCHSIA'),
+      name='libfuzzer_asan_test_fuzzer',
+      platform='FUCHSIA',
+      templates=[u'libfuzzer', u'engine_asan']).put()
+
+    # Set up a JobTemplate
+    data_types.JobTemplate(
+      name='libfuzzer',
+      environment_string=('APP_NAME = launcher.py\n'
+                        'MAX_FUZZ_THREADS = 1\n'
+                        'MAX_TESTCASES = 4\n'
+                        'FUZZ_TEST_TIMEOUT = 4800\n'
+                        'TEST_TIMEOUT = 30\n'
+                        'WARMUP_TIMEOUT = 30\n'
+                        'BAD_BUILD_CHECK = False\n'
+                        'THREAD_ALIVE_CHECK_INTERVAL = 1\n'
+                        'REPORT_OOMS_AND_HANGS = True\n'
+                        'CORPUS_FUZZER_NAME_OVERRIDE = libFuzzer\n'
+                        'ENABLE_GESTURES = False\n'
+                        'THREAD_DELAY = 30.0')).put()
+
+    # Set up another JobTemplate
+    data_types.JobTemplate(
+      name='engine_asan',
+      environment_string=('LSAN = True\n'
+                        'ADDITIONAL_ASAN_OPTIONS = quarantine_size_mb=64:strict_memcmp=1:symbolize=0:fast_unwind_on_fatal=0:allocator_release_to_os_interval_ms=500\n')).put()
+
+    # TODO do i need this specific line?
+    # TODO, which should be set here, and which should be expected from the env?
+    # currently we *fetch* FUCHSIA_PKEY_PATH and FUCHSIA_PORTNUM within the *runner*
+    # and we *set* them in device.py:qemu_setup(), which is called by fuzz_task()
+    # this means they get set in the *task*, not the *launcher*, which is why we have to preemptively set them here
+    # but this seems arbitrary? why aren't they set someplace else?
+    environment.set_bot_environment()
+    environment.set_value('QUEUE_OVERRIDE', 'FUCHSIA')
+    environment.set_value('OS_OVERRIDE', 'FUCHSIA')
+    resources_dir = environment.get_value('RESOURCES_DIR')
+    if not resources_dir:
+      raise Exception('Could not find RESOURCES_DIR')
+    fuchsia_resources_dir = os.path.join(resources_dir, 'fuchsia')
+    pkey_path = os.path.join(fuchsia_resources_dir, '.ssh', 'pkey')
+    portnum = '56339'
+    environment.set_value('FUCHSIA_PKEY_PATH', pkey_path)
+    environment.set_value('FUCHSIA_PORTNUM', portnum)
+
+    # we redefine _test_qemu_ssh here. there may not be a need? make sure we call run_launcher with the necessary arguments?
+    # oh wtf. we manually call fuchsia.device.qemu_setup so 
+    # (are multiple launchers getting launched? multiple runners? etc? the numbering here confuses me) NEED TO CLARIFY THIS
+    # leave as-is for now, then change
+
+  # Potentially two tests:
+  # * execute_task does the QEMU booting we expect when called with a Fuchsia fuzzer
+  # * when we run this *as well as the launcher* it all works
+  def test_fuzzer_can_boot_and_run(self):
+    """Tests running a single round of fuzzing on a Fuchsia target, using 'ls' in place of a fuzzing command."""
+    #output = run_launcher(testcase_path, 'test_fuzzer')
+    print("lol what up")
+    fuchsia.device.qemu_setup()
+    print("we got set up")
+    # aaaa seems to be a dummy fuzzer?
+    testcase_path = setup_testcase_and_corpus(
+        'aaaa', 'empty_corpus', fuzz=True)
+    output = run_launcher(testcase_path, 'test_fuzzer')
+    print("testageag")
+    #self._test_qemu_ssh()
+
+    self.assertEqual(1,1)
