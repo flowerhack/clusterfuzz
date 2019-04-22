@@ -670,7 +670,7 @@ class TestLauncherMinijail(BaseLauncherTest):
 # TODO lol do a fmt on all this
 @test_utils.integration
 @test_utils.with_cloud_emulators('datastore')  # TODO: is this needed?
-class TestLauncherFuchsia(BaseLauncherTest):
+class TestLauncherZFuchsia(BaseLauncherTest):
   """libFuzzer launcher tests (Fuchsia)."""
 
   # TODO  _mock_setup_build
