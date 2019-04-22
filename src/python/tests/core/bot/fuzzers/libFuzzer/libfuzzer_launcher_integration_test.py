@@ -802,11 +802,11 @@ class TestLauncherFuchsia(BaseLauncherTest):
     resources_dir = environment.get_value('RESOURCES_DIR')
     if not resources_dir:
       raise Exception('Could not find RESOURCES_DIR')
-    fuchsia_resources_dir = os.path.join(resources_dir, 'fuchsia')
-    pkey_path = os.path.join(fuchsia_resources_dir, '.ssh', 'pkey')
-    portnum = '56339'
-    environment.set_value('FUCHSIA_PKEY_PATH', pkey_path)
-    environment.set_value('FUCHSIA_PORTNUM', portnum)
+    #fuchsia_resources_dir = os.path.join(resources_dir, 'fuchsia')
+    #pkey_path = os.path.join(fuchsia_resources_dir, '.ssh', 'pkey')
+    #portnum = '56339'
+    #environment.set_value('FUCHSIA_PKEY_PATH', pkey_path)
+    #environment.set_value('FUCHSIA_PORTNUM', portnum)
 
     # we redefine _test_qemu_ssh here. there may not be a need? make sure we call run_launcher with the necessary arguments?
     # oh wtf. we manually call fuchsia.device.qemu_setup so 
