@@ -24,6 +24,10 @@ import parameterized
 from bot.fuzzers import libfuzzer
 from bot.fuzzers import utils as fuzzer_utils
 from bot.fuzzers.libFuzzer import launcher
+from datastore import data_types
+from platforms import fuchsia
+from system import environment
+from system import new_process
 from system import shell
 from tests.test_libs import helpers as test_helpers
 from tests.test_libs import test_utils

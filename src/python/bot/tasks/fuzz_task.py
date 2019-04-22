@@ -1268,6 +1268,11 @@ def execute_task(fuzzer_name, job_type):
 
   # Check if we have an application path. If not, our build failed
   # to setup correctly.
+  # TODO: Fuchsia does not get the APP_PATH when running under integration.
+  # My hacky fix was to hardcode in the path to the launcher here, e.g.
+  # if platform == 'FUCHSIA':
+  #   app_path = whatever
+  # Find out why APP_PATH isn't getting found properly and use that instead.
   app_path = environment.get_value('APP_PATH')
   if not app_path:
     _track_fuzzer_run_result(fuzzer_name, 0, 0,
