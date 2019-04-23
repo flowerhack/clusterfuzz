@@ -470,27 +470,27 @@ class TestLauncherMinijail(BaseLauncherTest):
     super(TestLauncherMinijail, self).setUp()
     os.environ['USE_MINIJAIL'] = 'True'
 
-  #def test_single_testcase_empty(self):
-  #  """Tests launcher with an empty testcase."""
-  #  testcase_path = setup_testcase_and_corpus('empty', 'empty_corpus')
-  #  output = run_launcher(testcase_path, 'test_fuzzer')
-  #  self.assertIn(
-  #      'Running command: {0}/test_fuzzer '
-  #      '-rss_limit_mb=2048 -timeout=25 -runs=100 '
-  #      '/empty'.format(DATA_DIRECTORY), output)
+  def test_single_testcase_empty(self):
+    """Tests launcher with an empty testcase."""
+    testcase_path = setup_testcase_and_corpus('empty', 'empty_corpus')
+    output = run_launcher(testcase_path, 'test_fuzzer')
+    self.assertIn(
+        'Running command: {0}/test_fuzzer '
+        '-rss_limit_mb=2048 -timeout=25 -runs=100 '
+        '/empty'.format(DATA_DIRECTORY), output)
 
-  #def test_single_testcase_crash(self):
-  #  """Tests launcher with a crashing testcase."""
-  #  testcase_path = setup_testcase_and_corpus('crash', 'empty_corpus')
-  #  output = run_launcher(testcase_path, 'test_fuzzer')
-  #  self.assertIn(
-  #      'Running command: {0}/test_fuzzer '
-  #      '-rss_limit_mb=2048 -timeout=25 -runs=100 '
-  #      '/crash'.format(DATA_DIRECTORY), output)
+  def test_single_testcase_crash(self):
+    """Tests launcher with a crashing testcase."""
+    testcase_path = setup_testcase_and_corpus('crash', 'empty_corpus')
+    output = run_launcher(testcase_path, 'test_fuzzer')
+    self.assertIn(
+        'Running command: {0}/test_fuzzer '
+        '-rss_limit_mb=2048 -timeout=25 -runs=100 '
+        '/crash'.format(DATA_DIRECTORY), output)
 
-  #  self.assertIn(
-  #      'ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000',
-  #      output)
+    self.assertIn(
+        'ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000',
+        output)
 
   @mock.patch('bot.fuzzers.libFuzzer.launcher.get_fuzz_timeout')
   def test_fuzz_no_crash(self, mock_get_timeout):
