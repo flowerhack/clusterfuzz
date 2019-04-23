@@ -666,16 +666,11 @@ class TestLauncherMinijail(BaseLauncherTest):
     mock_get_timeout.return_value = get_fuzz_timeout(1.0)
     self._test_merge_reductions('minijail-merge')
 
-# TODO lol do a fmt on all this
+
 @test_utils.integration
-@test_utils.with_cloud_emulators('datastore')  # TODO: is this needed?
+@test_utils.with_cloud_emulators('datastore')
 class TestLauncherZFuchsia(BaseLauncherTest):
   """libFuzzer launcher tests (Fuchsia)."""
-
-  # libfuzzer/launcher.py:main fails if the BUILD_DIR environment variable isn't set
-  # TODO  _mock_setup_build
-  # TODO _mock_rsync_to_disk
-  # TODO mock_rsync_from_disk
 
   def setUp(self):
     # Set up a Fuzzer.
@@ -760,13 +755,17 @@ class TestLauncherZFuchsia(BaseLauncherTest):
     environment.set_value('QUEUE_OVERRIDE', '')
     environment.set_value('OS_OVERRIDE', '')
 
-  # TODO Potentially two tests:
-  # * execute_task does the QEMU booting we expect when called with a Fuchsia fuzzer
-  # * when we run this *as well as the launcher* it all works
   def test_fuzzer_can_boot_and_run(self):
+    # Cannot call setUp from our class's setUp method, because we're using the cloud emulation
+    # decorator, which assumes the base class is unittest.TestCase, and recurses infinitely
+    # if this is not true (as in our case, with BaseLauncherTest as the base)
+    # TODO(flowerhack): Does it make more sense to factor out all the setUp into its own
+    # method, which will have to be specifically called by every class in this file?
     BaseLauncherTest.setUp(self)
 
     """Tests running a single round of fuzzing on a Fuchsia target, using 'ls' in place of a fuzzing command."""
+    # TODO(flowerhack): Fuchsia's `fuzz` only calls 'ls' right now by default, but we'll call it explicitly in
+    # here as we diversity `fuzz`'s functionality
     fuchsia.device.qemu_setup()
     testcase_path = setup_testcase_and_corpus(
         'aaaa', 'empty_corpus', fuzz=True)
