@@ -741,17 +741,12 @@ class TestLauncherZFuchsia(BaseLauncherTest):
       name='engine_asan',
       environment_string=('LSAN = True\n'
                         'ADDITIONAL_ASAN_OPTIONS = quarantine_size_mb=64:strict_memcmp=1:symbolize=0:fast_unwind_on_fatal=0:allocator_release_to_os_interval_ms=500\n')).put()
-
-    # TODO do i need this specific line?
-    # TODO, which should be set here, and which should be expected from the env?
-    # currently we *fetch* FUCHSIA_PKEY_PATH and FUCHSIA_PORTNUM within the *runner*
-    # and we *set* them in device.py:qemu_setup(), which is called by fuzz_task()
-    # this means they get set in the *task*, not the *launcher*, which is why we have to preemptively set them here
-    # but this seems arbitrary? why aren't they set someplace else?
-    environment.set_bot_environment()
+    
     environment.set_value('QUEUE_OVERRIDE', 'FUCHSIA')
     environment.set_value('OS_OVERRIDE', 'FUCHSIA')
     os.environ['FUCHSIA_RESOURCES_URL'] = 'gs://fuchsia-on-clusterfuzz-v2/*'
+    # set_bot_environment gives us access to RESOURCES_DIR
+    environment.set_bot_environment()
     resources_dir = environment.get_value('RESOURCES_DIR')
     if not resources_dir:
       raise Exception('Could not find RESOURCES_DIR')

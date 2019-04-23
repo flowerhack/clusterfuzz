@@ -550,8 +550,10 @@ def get_runner(fuzzer_path, temp_dir=None):
     # Set up /bin with llvm-symbolizer to allow symbolized stacktraces.
     # Don't copy if it already exists (e.g. ChromeOS chroot jail).
     llvm_symbolizer_source_path = environment.get_llvm_symbolizer_path()
+    print("llvm source path " + llvm_symbolizer_source_path)
     llvm_symbolizer_destination_path = os.path.join(minijail_bin,
                                                     'llvm-symbolizer')
+    print("llvm dest path " + llvm_symbolizer_destination_path)
     if not os.path.exists(llvm_symbolizer_destination_path):
       shutil.copy(llvm_symbolizer_source_path, llvm_symbolizer_destination_path)
 
