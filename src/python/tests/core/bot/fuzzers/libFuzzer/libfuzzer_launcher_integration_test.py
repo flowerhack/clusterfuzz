@@ -692,13 +692,13 @@ class TestLauncherZFuchsia(BaseLauncherTest):
       platform='FUCHSIA',
       weight=1.0).put()
 
-    # Set up a FuzzTarget (TODO is this necessary? I know these are autogen'd)
+    # Set up a FuzzTarget
     data_types.FuzzTarget(
       binary='libfuzzer_asan_test_fuzzer',
       engine='libFuzzer',
       project='test-project').put()
 
-    # Set up a FuzzTargetJob (TODO is this necessary? I know this is autogen'd)
+    # Set up a FuzzTargetJob
     data_types.FuzzTargetJob(
       engine='libFuzzer',
       fuzz_target_name='libFuzzer_libfuzzer_asan_test_fuzzer',
@@ -763,13 +763,12 @@ class TestLauncherZFuchsia(BaseLauncherTest):
     # method, which will have to be specifically called by every class in this file?
     BaseLauncherTest.setUp(self)
 
-    """Tests running a single round of fuzzing on a Fuchsia target, using 'ls' in place of a fuzzing command."""
-    # TODO(flowerhack): Fuchsia's `fuzz` only calls 'ls' right now by default, but we'll call it explicitly in
-    # here as we diversity `fuzz`'s functionality
+    """Tests running a single round of fuzzing on a Fuchsia target, using 'echo' in place of a fuzzing command."""
+    # TODO(flowerhack): Fuchsia's `fuzz` only calls 'echo running on fuchsia!' right now by default, but we'll
+    # call it explicitly in here as we diversity `fuzz`'s functionality
     fuchsia.device.qemu_setup()
     testcase_path = setup_testcase_and_corpus(
         'aaaa', 'empty_corpus', fuzz=True)
     output = run_launcher(testcase_path, 'test_fuzzer')
-
-    self.assertEqual(1,1)
+    self.assertIn('running on fuchsia!' ,output)
     # TODO kill QEMU instance here
