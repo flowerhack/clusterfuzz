@@ -775,8 +775,8 @@ class TestLauncherZFuchsia(BaseLauncherTest):
     # TODO(flowerhack): Fuchsia's `fuzz` only calls 'echo running on fuchsia!'
     # right now by default, but we'll call it explicitly in here as we
     # diversity `fuzz`'s functionality
-    fuchsia.device.qemu_setup()
+    qemu_process = fuchsia.device.qemu_setup()
     testcase_path = setup_testcase_and_corpus('aaaa', 'empty_corpus', fuzz=True)
     output = run_launcher(testcase_path, 'test_fuzzer')
     self.assertIn('running on fuchsia!', output)
-    # TODO kill QEMU instance here
+    qemu_process.kill()

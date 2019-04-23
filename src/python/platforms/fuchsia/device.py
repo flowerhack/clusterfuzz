@@ -93,6 +93,7 @@ def qemu_setup():
   qemu_process = new_process.ProcessRunner(qemu_path, qemu_args)
   # TODO(flowerhack): Implement teardown logic.
   qemu_process.run()
+  return qemu_process
 
 
 def initialize_resources_dir():
