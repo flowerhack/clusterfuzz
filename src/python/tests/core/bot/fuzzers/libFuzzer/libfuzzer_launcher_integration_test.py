@@ -470,27 +470,27 @@ class TestLauncherMinijail(BaseLauncherTest):
     super(TestLauncherMinijail, self).setUp()
     os.environ['USE_MINIJAIL'] = 'True'
 
-  #def test_single_testcase_empty(self):
-  #  """Tests launcher with an empty testcase."""
-  #  testcase_path = setup_testcase_and_corpus('empty', 'empty_corpus')
-  #  output = run_launcher(testcase_path, 'test_fuzzer')
-  #  self.assertIn(
-  #      'Running command: {0}/test_fuzzer '
-  #      '-rss_limit_mb=2048 -timeout=25 -runs=100 '
-  #      '/empty'.format(DATA_DIRECTORY), output)
+  def test_single_testcase_empty(self):
+    """Tests launcher with an empty testcase."""
+    testcase_path = setup_testcase_and_corpus('empty', 'empty_corpus')
+    output = run_launcher(testcase_path, 'test_fuzzer')
+    self.assertIn(
+        'Running command: {0}/test_fuzzer '
+        '-rss_limit_mb=2048 -timeout=25 -runs=100 '
+        '/empty'.format(DATA_DIRECTORY), output)
 
-  #def test_single_testcase_crash(self):
-  #  """Tests launcher with a crashing testcase."""
-  #  testcase_path = setup_testcase_and_corpus('crash', 'empty_corpus')
-  #  output = run_launcher(testcase_path, 'test_fuzzer')
-  #  self.assertIn(
-  #      'Running command: {0}/test_fuzzer '
-  #      '-rss_limit_mb=2048 -timeout=25 -runs=100 '
-  #      '/crash'.format(DATA_DIRECTORY), output)
+  def test_single_testcase_crash(self):
+    """Tests launcher with a crashing testcase."""
+    testcase_path = setup_testcase_and_corpus('crash', 'empty_corpus')
+    output = run_launcher(testcase_path, 'test_fuzzer')
+    self.assertIn(
+        'Running command: {0}/test_fuzzer '
+        '-rss_limit_mb=2048 -timeout=25 -runs=100 '
+        '/crash'.format(DATA_DIRECTORY), output)
 
-  #  self.assertIn(
-  #      'ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000',
-  #      output)
+    self.assertIn(
+        'ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000',
+        output)
 
   @mock.patch('bot.fuzzers.libFuzzer.launcher.get_fuzz_timeout')
   def test_fuzz_no_crash(self, mock_get_timeout):
@@ -666,16 +666,11 @@ class TestLauncherMinijail(BaseLauncherTest):
     mock_get_timeout.return_value = get_fuzz_timeout(1.0)
     self._test_merge_reductions('minijail-merge')
 
-# TODO lol do a fmt on all this
+
 @test_utils.integration
-@test_utils.with_cloud_emulators('datastore')  # TODO: is this needed?
+@test_utils.with_cloud_emulators('datastore')
 class TestLauncherZFuchsia(BaseLauncherTest):
   """libFuzzer launcher tests (Fuchsia)."""
-
-  # libfuzzer/launcher.py:main fails if the BUILD_DIR environment variable isn't set
-  # TODO  _mock_setup_build
-  # TODO _mock_rsync_to_disk
-  # TODO mock_rsync_from_disk
 
   def setUp(self):
     # Set up a Fuzzer.
@@ -697,13 +692,13 @@ class TestLauncherZFuchsia(BaseLauncherTest):
       platform='FUCHSIA',
       weight=1.0).put()
 
-    # Set up a FuzzTarget (TODO is this necessary? I know these are autogen'd)
+    # Set up a FuzzTarget
     data_types.FuzzTarget(
       binary='libfuzzer_asan_test_fuzzer',
       engine='libFuzzer',
       project='test-project').put()
 
-    # Set up a FuzzTargetJob (TODO is this necessary? I know this is autogen'd)
+    # Set up a FuzzTargetJob
     data_types.FuzzTargetJob(
       engine='libFuzzer',
       fuzz_target_name='libFuzzer_libfuzzer_asan_test_fuzzer',
@@ -741,17 +736,12 @@ class TestLauncherZFuchsia(BaseLauncherTest):
       name='engine_asan',
       environment_string=('LSAN = True\n'
                         'ADDITIONAL_ASAN_OPTIONS = quarantine_size_mb=64:strict_memcmp=1:symbolize=0:fast_unwind_on_fatal=0:allocator_release_to_os_interval_ms=500\n')).put()
-
-    # TODO do i need this specific line?
-    # TODO, which should be set here, and which should be expected from the env?
-    # currently we *fetch* FUCHSIA_PKEY_PATH and FUCHSIA_PORTNUM within the *runner*
-    # and we *set* them in device.py:qemu_setup(), which is called by fuzz_task()
-    # this means they get set in the *task*, not the *launcher*, which is why we have to preemptively set them here
-    # but this seems arbitrary? why aren't they set someplace else?
-    environment.set_bot_environment()
+    
     environment.set_value('QUEUE_OVERRIDE', 'FUCHSIA')
     environment.set_value('OS_OVERRIDE', 'FUCHSIA')
     os.environ['FUCHSIA_RESOURCES_URL'] = 'gs://fuchsia-on-clusterfuzz-v2/*'
+    # set_bot_environment gives us access to RESOURCES_DIR
+    environment.set_bot_environment()
     resources_dir = environment.get_value('RESOURCES_DIR')
     if not resources_dir:
       raise Exception('Could not find RESOURCES_DIR')
@@ -765,17 +755,20 @@ class TestLauncherZFuchsia(BaseLauncherTest):
     environment.set_value('QUEUE_OVERRIDE', '')
     environment.set_value('OS_OVERRIDE', '')
 
-  # TODO Potentially two tests:
-  # * execute_task does the QEMU booting we expect when called with a Fuchsia fuzzer
-  # * when we run this *as well as the launcher* it all works
   def test_fuzzer_can_boot_and_run(self):
+    # Cannot call setUp from our class's setUp method, because we're using the cloud emulation
+    # decorator, which assumes the base class is unittest.TestCase, and recurses infinitely
+    # if this is not true (as in our case, with BaseLauncherTest as the base)
+    # TODO(flowerhack): Does it make more sense to factor out all the setUp into its own
+    # method, which will have to be specifically called by every class in this file?
     BaseLauncherTest.setUp(self)
 
-    """Tests running a single round of fuzzing on a Fuchsia target, using 'ls' in place of a fuzzing command."""
+    """Tests running a single round of fuzzing on a Fuchsia target, using 'echo' in place of a fuzzing command."""
+    # TODO(flowerhack): Fuchsia's `fuzz` only calls 'echo running on fuchsia!' right now by default, but we'll
+    # call it explicitly in here as we diversity `fuzz`'s functionality
     fuchsia.device.qemu_setup()
     testcase_path = setup_testcase_and_corpus(
         'aaaa', 'empty_corpus', fuzz=True)
     output = run_launcher(testcase_path, 'test_fuzzer')
-
-    self.assertEqual(1,1)
+    self.assertIn('running on fuchsia!' ,output)
     # TODO kill QEMU instance here
