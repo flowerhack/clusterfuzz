@@ -359,9 +359,6 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            extra_env=None):
     """LibFuzzerCommon.fuzz override."""
     return self._test_qemu_ssh()
-    #LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
-    #                     artifact_prefix, additional_args)
-    #return
 
   def run_single_testcase(self,
                           testcase_path,
@@ -373,7 +370,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
   def ssh_command(self, *args):
     return ['ssh'] + self.ssh_root + list(args)
 
-  #@retry.wrap(retries=SSH_RETRIES, delay=SSH_WAIT, function='_test_qemu_ssh')
+  @retry.wrap(retries=SSH_RETRIES, delay=SSH_WAIT, function='_test_qemu_ssh')
   def _test_qemu_ssh(self):
     """Tests that a VM is up and can be successfully SSH'd into.
     Raises an exception if no success after MAX_SSH_RETRIES."""
