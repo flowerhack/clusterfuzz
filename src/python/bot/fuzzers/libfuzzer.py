@@ -374,7 +374,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
   def _test_qemu_ssh(self):
     """Tests that a VM is up and can be successfully SSH'd into.
     Raises an exception if no success after MAX_SSH_RETRIES."""
-    ssh_test_process = new_process.ProcessRunner('ssh', self.ssh_args + ['echo running on fuchsia!'])
+    ssh_test_process = new_process.ProcessRunner(
+        'ssh', self.ssh_args + ['echo running on fuchsia!'])
     result = ssh_test_process.run_and_wait()
     if result.return_code or result.timed_out:
       raise fuchsia.errors.FuchsiaConnectionError(

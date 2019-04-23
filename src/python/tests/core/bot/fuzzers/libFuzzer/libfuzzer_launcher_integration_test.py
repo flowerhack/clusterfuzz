@@ -675,68 +675,72 @@ class TestLauncherZFuchsia(BaseLauncherTest):
   def setUp(self):
     # Set up a Fuzzer.
     data_types.Fuzzer(
-      revision=1,
-      additional_environment_string='FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*',
-      builtin=True,
-      differential=False,
-      file_size='builtin',
-      jobs=[u'libfuzzer_asan_test_fuzzer'],
-      name='libFuzzer',
-      source='builtin',  # change to "test@example.com" if it acts up
-      max_testcases=4).put()
+        revision=1,
+        additional_environment_string=
+        'FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*',
+        builtin=True,
+        differential=False,
+        file_size='builtin',
+        jobs=[u'libfuzzer_asan_test_fuzzer'],
+        name='libFuzzer',
+        source='builtin',  # change to "test@example.com" if it acts up
+        max_testcases=4).put()
 
     # Set up a FuzzerJob.
     data_types.FuzzerJob(
-      fuzzer='libFuzzer',
-      job='libfuzzer_asan_test_fuzzer',
-      platform='FUCHSIA',
-      weight=1.0).put()
+        fuzzer='libFuzzer',
+        job='libfuzzer_asan_test_fuzzer',
+        platform='FUCHSIA',
+        weight=1.0).put()
 
     # Set up a FuzzTarget
     data_types.FuzzTarget(
-      binary='libfuzzer_asan_test_fuzzer',
-      engine='libFuzzer',
-      project='test-project').put()
+        binary='libfuzzer_asan_test_fuzzer',
+        engine='libFuzzer',
+        project='test-project').put()
 
     # Set up a FuzzTargetJob
     data_types.FuzzTargetJob(
-      engine='libFuzzer',
-      fuzz_target_name='libFuzzer_libfuzzer_asan_test_fuzzer',
-      job='libfuzzer_asan_test_fuzzer',
-      weight=1.0).put()
+        engine='libFuzzer',
+        fuzz_target_name='libFuzzer_libfuzzer_asan_test_fuzzer',
+        job='libfuzzer_asan_test_fuzzer',
+        weight=1.0).put()
 
     # Set up a Job
     data_types.Job(
-      environment_string=('CUSTOM_BINARY = True\n'
-                        'FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*\n'
-                        'QUEUE_OVERRIDE=FUCHSIA\n'
-                        'OS_OVERRIDE=FUCHSIA'),
-      name='libfuzzer_asan_test_fuzzer',
-      platform='FUCHSIA',
-      templates=[u'libfuzzer', u'engine_asan']).put()
+        environment_string=(
+            'CUSTOM_BINARY = True\n'
+            'FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*\n'
+            'QUEUE_OVERRIDE=FUCHSIA\n'
+            'OS_OVERRIDE=FUCHSIA'),
+        name='libfuzzer_asan_test_fuzzer',
+        platform='FUCHSIA',
+        templates=[u'libfuzzer', u'engine_asan']).put()
 
     # Set up a JobTemplate
     data_types.JobTemplate(
-      name='libfuzzer',
-      environment_string=('APP_NAME = launcher.py\n'
-                        'MAX_FUZZ_THREADS = 1\n'
-                        'MAX_TESTCASES = 4\n'
-                        'FUZZ_TEST_TIMEOUT = 4800\n'
-                        'TEST_TIMEOUT = 30\n'
-                        'WARMUP_TIMEOUT = 30\n'
-                        'BAD_BUILD_CHECK = False\n'
-                        'THREAD_ALIVE_CHECK_INTERVAL = 1\n'
-                        'REPORT_OOMS_AND_HANGS = True\n'
-                        'CORPUS_FUZZER_NAME_OVERRIDE = libFuzzer\n'
-                        'ENABLE_GESTURES = False\n'
-                        'THREAD_DELAY = 30.0')).put()
+        name='libfuzzer',
+        environment_string=('APP_NAME = launcher.py\n'
+                            'MAX_FUZZ_THREADS = 1\n'
+                            'MAX_TESTCASES = 4\n'
+                            'FUZZ_TEST_TIMEOUT = 4800\n'
+                            'TEST_TIMEOUT = 30\n'
+                            'WARMUP_TIMEOUT = 30\n'
+                            'BAD_BUILD_CHECK = False\n'
+                            'THREAD_ALIVE_CHECK_INTERVAL = 1\n'
+                            'REPORT_OOMS_AND_HANGS = True\n'
+                            'CORPUS_FUZZER_NAME_OVERRIDE = libFuzzer\n'
+                            'ENABLE_GESTURES = False\n'
+                            'THREAD_DELAY = 30.0')).put()
 
     # Set up another JobTemplate
     data_types.JobTemplate(
-      name='engine_asan',
-      environment_string=('LSAN = True\n'
-                        'ADDITIONAL_ASAN_OPTIONS = quarantine_size_mb=64:strict_memcmp=1:symbolize=0:fast_unwind_on_fatal=0:allocator_release_to_os_interval_ms=500\n')).put()
-    
+        name='engine_asan',
+        environment_string=
+        ('LSAN = True\n'
+         'ADDITIONAL_ASAN_OPTIONS = quarantine_size_mb=64:strict_memcmp=1:symbolize=0:fast_unwind_on_fatal=0:allocator_release_to_os_interval_ms=500\n'
+        )).put()
+
     environment.set_value('QUEUE_OVERRIDE', 'FUCHSIA')
     environment.set_value('OS_OVERRIDE', 'FUCHSIA')
     os.environ['FUCHSIA_RESOURCES_URL'] = 'gs://fuchsia-on-clusterfuzz-v2/*'
@@ -762,13 +766,11 @@ class TestLauncherZFuchsia(BaseLauncherTest):
     # TODO(flowerhack): Does it make more sense to factor out all the setUp into its own
     # method, which will have to be specifically called by every class in this file?
     BaseLauncherTest.setUp(self)
-
     """Tests running a single round of fuzzing on a Fuchsia target, using 'echo' in place of a fuzzing command."""
     # TODO(flowerhack): Fuchsia's `fuzz` only calls 'echo running on fuchsia!' right now by default, but we'll
     # call it explicitly in here as we diversity `fuzz`'s functionality
     fuchsia.device.qemu_setup()
-    testcase_path = setup_testcase_and_corpus(
-        'aaaa', 'empty_corpus', fuzz=True)
+    testcase_path = setup_testcase_and_corpus('aaaa', 'empty_corpus', fuzz=True)
     output = run_launcher(testcase_path, 'test_fuzzer')
-    self.assertIn('running on fuchsia!' ,output)
+    self.assertIn('running on fuchsia!', output)
     # TODO kill QEMU instance here
