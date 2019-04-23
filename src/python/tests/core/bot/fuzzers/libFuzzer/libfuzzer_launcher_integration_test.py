@@ -773,7 +773,6 @@ class TestLauncherZFuchsia(BaseLauncherTest):
 
     """Tests running a single round of fuzzing on a Fuchsia target, using 'ls' in place of a fuzzing command."""
     fuchsia.device.qemu_setup()
-    print("we're ready to keep rolling")
     testcase_path = setup_testcase_and_corpus(
         'aaaa', 'empty_corpus', fuzz=True)
     output = run_launcher(testcase_path, 'test_fuzzer')
