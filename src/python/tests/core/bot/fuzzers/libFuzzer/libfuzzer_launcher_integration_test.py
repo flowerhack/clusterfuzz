@@ -83,8 +83,8 @@ def run_launcher(*args):
   """Run launcher.py."""
   string_io = StringIO.StringIO()
   print("let's go to town\n")
-  #with mock.patch('sys.stdout', string_io):
-  launcher.main(['launcher.py'] + list(args))
+  with mock.patch('sys.stdout', string_io):
+    launcher.main(['launcher.py'] + list(args))
 
   return string_io.getvalue()
 
@@ -670,7 +670,7 @@ class TestLauncherMinijail(BaseLauncherTest):
 # TODO lol do a fmt on all this
 @test_utils.integration
 @test_utils.with_cloud_emulators('datastore')  # TODO: is this needed?
-class TestLauncherFuchsia(BaseLauncherTest):
+class TestLauncherZFuchsia(BaseLauncherTest):
   """libFuzzer launcher tests (Fuchsia)."""
 
   # libfuzzer/launcher.py:main fails if the BUILD_DIR environment variable isn't set
