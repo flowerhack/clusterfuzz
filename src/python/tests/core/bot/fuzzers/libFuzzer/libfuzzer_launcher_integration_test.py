@@ -27,7 +27,6 @@ from bot.fuzzers.libFuzzer import launcher
 from datastore import data_types
 from platforms import fuchsia
 from system import environment
-from system import new_process
 from system import shell
 from tests.test_libs import helpers as test_helpers
 from tests.test_libs import test_utils
@@ -736,10 +735,11 @@ class TestLauncherZFuchsia(BaseLauncherTest):
     # Set up another JobTemplate
     data_types.JobTemplate(
         name='engine_asan',
-        environment_string=
-        ('LSAN = True\n'
-         'ADDITIONAL_ASAN_OPTIONS = quarantine_size_mb=64:strict_memcmp=1:symbolize=0:fast_unwind_on_fatal=0:allocator_release_to_os_interval_ms=500\n'
-        )).put()
+        environment_string=(
+            'LSAN = True\n'
+            'ADDITIONAL_ASAN_OPTIONS = quarantine_size_mb=64:strict_memcmp=1'
+            ':symbolize=0:fast_unwind_on_fatal=0'
+            ':allocator_release_to_os_interval_ms=500\n')).put()
 
     environment.set_value('QUEUE_OVERRIDE', 'FUCHSIA')
     environment.set_value('OS_OVERRIDE', 'FUCHSIA')
@@ -760,15 +760,21 @@ class TestLauncherZFuchsia(BaseLauncherTest):
     environment.set_value('OS_OVERRIDE', '')
 
   def test_fuzzer_can_boot_and_run(self):
-    # Cannot call setUp from our class's setUp method, because we're using the cloud emulation
-    # decorator, which assumes the base class is unittest.TestCase, and recurses infinitely
-    # if this is not true (as in our case, with BaseLauncherTest as the base)
-    # TODO(flowerhack): Does it make more sense to factor out all the setUp into its own
-    # method, which will have to be specifically called by every class in this file?
+    """Tests running a single round of fuzzing on a Fuchsia target, using
+    'echo' in place of a fuzzing command."""
+
+    # Cannot call setUp from our class's setUp method, because we're using the
+    # cloud emulation decorator, which assumes the base class is
+    # unittest.TestCase, and recurses infinitely if this is not true (as in our
+    # case, with BaseLauncherTest as the base)
+    # TODO(flowerhack): Does it make more sense to factor out all the setUp
+    # into its own method, which will have to be specifically called by every
+    # class in this file?
     BaseLauncherTest.setUp(self)
-    """Tests running a single round of fuzzing on a Fuchsia target, using 'echo' in place of a fuzzing command."""
-    # TODO(flowerhack): Fuchsia's `fuzz` only calls 'echo running on fuchsia!' right now by default, but we'll
-    # call it explicitly in here as we diversity `fuzz`'s functionality
+
+    # TODO(flowerhack): Fuchsia's `fuzz` only calls 'echo running on fuchsia!'
+    # right now by default, but we'll call it explicitly in here as we
+    # diversity `fuzz`'s functionality
     fuchsia.device.qemu_setup()
     testcase_path = setup_testcase_and_corpus('aaaa', 'empty_corpus', fuzz=True)
     output = run_launcher(testcase_path, 'test_fuzzer')
