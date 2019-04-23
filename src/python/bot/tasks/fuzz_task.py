@@ -1483,6 +1483,8 @@ def execute_task(fuzzer_name, job_type):
 
     gcs_corpus.upload_files(new_files)
 
+  # TODO: kill running QEMU instance here
+
   logs.log('Finished processing test cases.')
 
   # Currently, the decision to do fuzzing or running the testcase is based on

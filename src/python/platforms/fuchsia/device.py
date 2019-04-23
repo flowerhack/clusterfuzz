@@ -36,7 +36,9 @@ def qemu_setup():
   * /qemu-for-fuchsia/*
   * /.ssh/*"""
   # First download the Fuchsia resources locally.
+  print("setup fiesta!")
   fuchsia_resources_dir = initialize_resources_dir()
+  print("setup fiesta done!")
 
   # Then, save paths for necessary commands later.
   qemu_path = os.path.join(fuchsia_resources_dir, 'qemu-for-fuchsia', 'bin',
@@ -90,6 +92,9 @@ def qemu_setup():
   environment.set_value('FUCHSIA_PORTNUM', portnum)
 
   # Finally, launch QEMU.
+  print("we launched qemu!!!")
+  print(qemu_path)
+  print(str(qemu_args))
   qemu_process = new_process.ProcessRunner(qemu_path, qemu_args)
   # TODO(flowerhack): Implement teardown logic.
   qemu_process.run()

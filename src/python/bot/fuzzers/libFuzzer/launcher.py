@@ -753,6 +753,7 @@ def move_mergeable_units(merge_directory, corpus_directory):
 
 def main(argv):
   """Run libFuzzer as specified by argv."""
+  print("we're in the launcher")
   atexit.register(fuzzer_utils.cleanup)
 
   # Initialize variables.
@@ -910,6 +911,7 @@ def main(argv):
   if do_mutator_plugin():
     if use_mutator_plugin(target_name, extra_env, minijail_chroot):
       fuzzing_strategies.append(strategy.MUTATOR_PLUGIN_STRATEGY)
+  print("run runner.fuzz")
 
   # Execute the fuzzer binary with original arguments.
   fuzz_result = runner.fuzz(
@@ -917,6 +919,8 @@ def main(argv):
       fuzz_timeout=fuzz_timeout,
       additional_args=arguments + [artifact_prefix],
       extra_env=extra_env)
+
+  print("ran runner.fuzz")
 
   if (not use_minijail and
       fuzz_result.return_code == constants.LIBFUZZER_ERROR_EXITCODE):

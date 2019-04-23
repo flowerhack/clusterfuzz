@@ -82,9 +82,9 @@ def setup_testcase_and_corpus(testcase, corpus, fuzz=False):
 def run_launcher(*args):
   """Run launcher.py."""
   string_io = StringIO.StringIO()
-
-  with mock.patch('sys.stdout', string_io):
-    launcher.main(['launcher.py'] + list(args))
+  print("let's go to town\n")
+  #with mock.patch('sys.stdout', string_io):
+  launcher.main(['launcher.py'] + list(args))
 
   return string_io.getvalue()
 
@@ -832,6 +832,7 @@ class TestLauncherFuchsia(BaseLauncherTest):
     #output = run_launcher(testcase_path, 'test_fuzzer')
     #print("lol what up")
     fuchsia.device.qemu_setup()
+    print("we're ready to keep rolling")
     #print("we got set up")
     # aaaa seems to be a dummy fuzzer?
     testcase_path = setup_testcase_and_corpus(
@@ -840,3 +841,4 @@ class TestLauncherFuchsia(BaseLauncherTest):
     #print("testageag")
 
     self.assertEqual(1,1)
+    # TODO kill QEMU instance here
