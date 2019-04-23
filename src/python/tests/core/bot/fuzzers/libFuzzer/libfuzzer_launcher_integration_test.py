@@ -673,13 +673,17 @@ class TestLauncherMinijail(BaseLauncherTest):
 class TestLauncherFuchsia(BaseLauncherTest):
   """libFuzzer launcher tests (Fuchsia)."""
 
+  # libfuzzer/launcher.py:main fails if the BUILD_DIR environment variable isn't set
   # TODO  _mock_setup_build
   # TODO _mock_rsync_to_disk
   # TODO mock_rsync_from_disk
 
   def setUp(self):
-    # Cannot call super(TestLauncherFuchsia) because we're using the cloud emulator
+    # Massive hack: we can't call super(TestLauncherFuchsia) because we're using the cloud emulator,
+     #
     # TODO: do we need the cloud emulator?
+
+    
     
 
     # TODO needed?
@@ -822,6 +826,8 @@ class TestLauncherFuchsia(BaseLauncherTest):
   # * execute_task does the QEMU booting we expect when called with a Fuchsia fuzzer
   # * when we run this *as well as the launcher* it all works
   def test_fuzzer_can_boot_and_run(self):
+    BaseLauncherTest.setUp(self)
+
     """Tests running a single round of fuzzing on a Fuchsia target, using 'ls' in place of a fuzzing command."""
     #output = run_launcher(testcase_path, 'test_fuzzer')
     #print("lol what up")

@@ -774,6 +774,9 @@ def main(argv):
 
   # Make sure that the fuzzer binary exists.
   build_directory = environment.get_value('BUILD_DIR')
+  print("finding fuzzer path\n")
+  print("build dir: " + build_directory + "\n")
+  print("target name: " + target_name + "\n")
   fuzzer_path = engine_common.find_fuzzer_path(build_directory, target_name)
   if not fuzzer_path:
     # This is an expected case when doing regression testing with old builds
