@@ -1419,6 +1419,7 @@ def execute_task(fuzzer_name, job_type):
                 env_copy, True))
 
       try:
+        # Starts the "Launcher" process.
         thread.start()
       except:
         process_handler.terminate_stale_application_instances()

@@ -909,6 +909,8 @@ def main(argv):
     if use_mutator_plugin(target_name, extra_env, minijail_chroot):
       fuzzing_strategies.append(strategy.MUTATOR_PLUGIN_STRATEGY)
 
+  # We're in the launcher, which calls the actual fuzzer.
+  # This is done by the Fuchsia runner's fuzz function.
   # Execute the fuzzer binary with original arguments.
   fuzz_result = runner.fuzz(
       corpus_directories,
@@ -928,6 +930,8 @@ def main(argv):
   # original output which is no longer needed.
   fuzz_result.output = None
 
+  # First: make sure we properly match on "crash" lines
+  # Make sure we get the "crash testcase file path" off the device
   # Check if we crashed, and get the crash testcase path.
   crash_testcase_file_path = None
   for line in log_lines:
@@ -944,6 +948,7 @@ def main(argv):
       crash_testcase_file_path = os.path.join(minijail_chroot.directory,
                                               crash_testcase_file_path[1:])
 
+    # If we crashed, we copy the testcase into the "main testcase file path". (Where's the latter init'd?)
     # Copy crash testcase contents into the main testcase path.
     shutil.move(crash_testcase_file_path, testcase_file_path)
 
@@ -957,9 +962,11 @@ def main(argv):
   print(log_header_format % (engine_common.get_command_quoted(command),
                              bot_name, fuzz_result.time_executed))
 
+  # TODO make sure this is a dummy function for now?
   # Parse stats information based on libFuzzer output.
   parsed_stats = parse_log_stats(log_lines)
 
+  # TODO make sure this is also dummy'd for now?
   # Extend parsed stats by additional performance features.
   parsed_stats.update(
       stats.parse_performance_features(log_lines, fuzzing_strategies,
@@ -982,6 +989,8 @@ def main(argv):
   # Remove fuzzing arguments before merge and dictionary analysis step.
   remove_fuzzing_arguments(arguments)
 
+  # TODO do we need to do anything special for merge? if so, we need to dummy this for now,
+  # probably to just always say no new units added
   # Make a decision on whether merge step is needed at all. If there are no
   # new units added by libFuzzer run, then no need to do merge at all.
   new_units_added = parsed_stats.get('new_units_added', 0)
@@ -1037,6 +1046,7 @@ def main(argv):
 
   # Get corpus size after merge. This removes the duplicate units that were
   # created during this fuzzing session.
+  # TODO make sure we get proper corpus size
   stat_overrides['corpus_size'] = shell.get_directory_file_count(
       corpus_directory)
 

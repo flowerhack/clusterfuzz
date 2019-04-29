@@ -359,6 +359,12 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            extra_env=None):
     """LibFuzzerCommon.fuzz override."""
     self._test_qemu_ssh()
+    # This is where actual fuzzing happens.
+    # TODO HERE:
+    # Fuzzer selection.
+    # Wait for fuzzer to run.
+    # We'll want to turn this into *return fuzz*.
+    # Do we need to call parent LibFuzzercommon.fuzz for anything?
     LibFuzzerCommon.fuzz(self, corpus_directories, fuzz_timeout,
                          artifact_prefix, additional_args)
 
