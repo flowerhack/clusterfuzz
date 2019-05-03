@@ -678,7 +678,7 @@ class TestLauncherFuchsia(BaseLauncherTest):
     data_types.Fuzzer(
         revision=1,
         additional_environment_string=
-        'FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*',
+        'FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v5/*',
         builtin=True,
         differential=False,
         file_size='builtin',
@@ -711,7 +711,7 @@ class TestLauncherFuchsia(BaseLauncherTest):
     data_types.Job(
         environment_string=(
             'CUSTOM_BINARY = True\n'
-            'FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*\n'
+            'FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v5/*\n'
             'QUEUE_OVERRIDE=FUCHSIA\n'
             'OS_OVERRIDE=FUCHSIA'),
         name='libfuzzer_asan_test_fuzzer',
@@ -746,7 +746,7 @@ class TestLauncherFuchsia(BaseLauncherTest):
     environment.set_value('QUEUE_OVERRIDE', 'FUCHSIA')
     environment.set_value('OS_OVERRIDE', 'FUCHSIA')
     environment.set_value('FUCHSIA_RESOURCES_URL',
-                          'gs://fuchsia-on-clusterfuzz-v2/*')
+                          'gs://fuchsia-on-clusterfuzz-v5/*')
     # set_bot_environment gives us access to RESOURCES_DIR
     environment.set_bot_environment()
     # Cannot simply call super(TestLauncherFuchsia).setUp, because the

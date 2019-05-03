@@ -37,26 +37,38 @@ def qemu_setup():
   Fuchsia fuzzers assume a QEMU VM is running; call this routine prior to
   beginning Fuchsia fuzzing tasks.
   This initialization routine assumes that the GCS bucket contains the
-  standard Fuchsia SDK, as well as:
-  * /qemu-for-fuchsia/*
-  * /.ssh/*"""
+  folllowing files from a standard Fuchsia fuzzing build (e.g. `fx set core.x64
+  --with-base=//bundles:tests --fuzz-with asan`):
+  * buildtools/linux-x64/*
+  * buildtools/vars.sh
+  * out/default/fuzzers.json
+  * out/default/ids.txt
+  * out/default/fuchsia.zbi
+  * out/default/ssh-keys/*
+  * out/default/obj/build/images/fvm.blk
+  * out/default.zircon/tools/*
+  * scripts/*
+  * tools/*
+  * zircon/prebuilt/downloads/symbolize
+  * .ssh/*
+  * .jiri_root/*
+  * .fx-build-dir
+
+  """
   # First download the Fuchsia resources locally.
   fuchsia_resources_dir = initialize_resources_dir()
 
   # Then, save paths for necessary commands later.
-  qemu_path = os.path.join(fuchsia_resources_dir, 'qemu-for-fuchsia', 'bin',
-                           'qemu-system-x86_64')
+  qemu_path = os.path.join(fuchsia_resources_dir, 'buildtools', 'linux-x64', 'bin', 'qemu-system-x86_64')
   os.chmod(qemu_path, 0o550)
-  kernel_path = os.path.join(fuchsia_resources_dir, 'target', 'x64',
-                             'qemu-kernel.bin')
+  kernel_path = os.path.join(fuchsia_resources_dir, 'buildtools', 'linux-x64', 'qemu', 'share', 'qemu' 'multiboot.bin')
   os.chmod(kernel_path, 0o644)
   pkey_path = os.path.join(fuchsia_resources_dir, '.ssh', 'pkey')
   os.chmod(pkey_path, 0o400)
-  sharefiles_path = os.path.join(fuchsia_resources_dir, 'qemu-for-fuchsia',
-                                 'share', 'qemu')
-  drive_path = os.path.join(fuchsia_resources_dir, 'target', 'x64', 'fvm.blk')
+  sharefiles_path = os.path.join(fuchsia_resources_dir, 'buildtools', 'linux-x64', 'qemu', 'share', 'qemu')
+  drive_path = os.path.join(fuchsia_resources_dir, 'out', 'default', 'obj', 'build', 'images', 'fvm.blk')
   os.chmod(drive_path, 0o644)
-  fuchsia_zbi = os.path.join(fuchsia_resources_dir, 'target', 'x64',
+  fuchsia_zbi = os.path.join(fuchsia_resources_dir, 'out', 'default',
                              'fuchsia.zbi')
   initrd_path = os.path.join(fuchsia_resources_dir, 'fuchsia-ssh.zbi')
 
