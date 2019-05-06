@@ -27,6 +27,9 @@ from system import minijail
 from system import new_process
 from system import shell
 
+from lib.fuzzer import Fuzzer
+from lib.host import Host
+
 MAX_OUTPUT_LEN = 1 * 1024 * 1024  # 1 MB
 
 
@@ -350,9 +353,18 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
         executable_path=executable_path, default_args=default_args)
 
   def get_command(self, additional_args=None):
-    # TODO(flowerhack): Update this to dynamically pick a result from "fuzz
-    # list" and then run that fuzzer.
-    return self.ssh_command('ls')
+    # TODO add a switch: should be able to pick the dummy fuzzer during testing
+    # TODO do i need to set FUCHSIA_DIR a la:
+    # environment.set_value('FUCHSIA_DIR', '')
+    host = Host.from_build()
+    # TODO make `name` an optional arg in Fuzzer.filter() definition
+    fuzzer_names = Fuzzer.filter(host.fuzzers, '')
+    # TODO propogate the chosen fuzzer in some way
+    selected_fuzzer_name = random.choice(fuzzers)
+    selected_fuzzer = Fuzzer(device, selected_fuzzer_name[0], selected_fuzzer_name[1])
+    # TODO add the logic that actually checks for the crash???
+    # self.run(fuzzer_args, logfile=self.results('fuzz-0.log'))
+    return selected_fuzzer.start()
 
   def fuzz(self,
            corpus_directories,
@@ -361,7 +373,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            additional_args=None,
            extra_env=None):
     """LibFuzzerCommon.fuzz override."""
-    return self._test_qemu_ssh()
+    self._test_qemu_ssh()
+    return self.get_command()
 
   def run_single_testcase(self,
                           testcase_path,
