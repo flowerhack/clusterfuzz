@@ -43,7 +43,7 @@ class Device(object):
     self._addr = addr
     self._ssh_opts = {}
     if port != 22:
-      self._ssh_opts['p'] = str(port)
+      self._ssh_opts['p'] = [str(port)] # ...might fix another bug?
 
   def set_ssh_config(self, config_file):
     """Sets the SSH arguments to use a config file."""
@@ -59,7 +59,7 @@ class Device(object):
   def set_ssh_option(self, option):
     """Sets SSH configuration options. Can be used multiple times."""
     if 'o' in self._ssh_opts:
-      self._ssh_opts.append(option)
+      self._ssh_opts['o'].append(option) #fixes a bug...? i think?
     else:
       self._ssh_opts['o'] = [option]
 
@@ -82,7 +82,8 @@ class Device(object):
         for arg in args:
           result.append('-' + opt)
           result.append(arg)
-    return result + cmd[1:]
+    result.append(self._addr) # fixes another bug?
+    return result + cmd #another bug? what is this?
 
   def _ssh(self, cmdline, stdout=subprocess.PIPE):
     """Internal wrapper around _rexec that adds the ssh command and config.

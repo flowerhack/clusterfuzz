@@ -87,6 +87,7 @@ def qemu_setup():
   tcp.close()
   # Fuzzing jobs that SSH into the QEMU VM need access to this env var.
   environment.set_value('FUCHSIA_PORTNUM', port)
+  environment.set_value('FUCHSIA_RESOURCES_DIR', fuchsia_resources_dir)
 
   # yapf: disable
   qemu_args = [
