@@ -19,6 +19,9 @@ import copy
 import os
 import shutil
 
+from fuchsia_util.lib.host import Host
+from fuchsia_util.lib.device import Device
+from fuchsia_util.lib.fuzzer import Fuzzer
 from base import retry
 from bot.fuzzers import engine_common
 from bot.fuzzers.libFuzzer import constants
@@ -334,19 +337,16 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
   def __init__(self, executable_path, default_args=None):
     fuchsia_pkey_path = environment.get_value('FUCHSIA_PKEY_PATH')
     fuchsia_portnum = environment.get_value('FUCHSIA_PORTNUM')
-    if not fuchsia_pkey_path or not fuchsia_portnum:
+    fuchsia_resources_dir = environment.get_value('FUCHSIA_RESOURCES_DIR')
+    if not fuchsia_pkey_path or not fuchsia_portnum or not fuchsia_resources_dir:
       raise fuchsia.errors.FuchsiaConfigError(
-          'FUCHSIA_PKEY_PATH and/or FUCHSIA_PORTNUM was not set')
-    # yapf: disable
-    self.ssh_args = [
-        '-vvv',
-        '-i', fuchsia_pkey_path,
-        '-o', 'StrictHostKeyChecking no',
-        '-o', 'UserKnownHostsFile=/dev/null',
-        '-p', str(fuchsia_portnum),
-        'localhost'
-    ]
-    # yapf: enable
+          'FUCHSIA_PKEY_PATH and/or FUCHSIA_PORTNUM and/or FUCHSIA_RESOURCES_DIR was not set')
+    self.host = Host.from_dir(os.path.join(fuchsia_resources_dir, 'build', 'out', 'default'))
+    self.device = Device(self.host, 'localhost', fuchsia_portnum)
+    self.fuzzers = Fuzzer.filter(self.host.fuzzers, '')
+    self.device.set_ssh_option('StrictHostKeyChecking no')
+    self.device.set_ssh_option('UserKnownHostsFile=/dev/null')
+    self.device.set_ssh_identity(fuchsia_pkey_path)
     super(FuchsiaQemuLibFuzzerRunner, self).__init__(
         executable_path=executable_path, default_args=default_args)
 
@@ -378,9 +378,12 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
   def _test_qemu_ssh(self):
     """Tests that a VM is up and can be successfully SSH'd into.
     Raises an exception if no success after MAX_SSH_RETRIES."""
-    print('Attempting SSH. Command: ssh ' + str(self.ssh_args))
+    
+
+    # TODO log the actual command
+    print('Attempting SSH.')
     ssh_test_process = new_process.ProcessRunner(
-        'ssh', self.ssh_args + ['echo running on fuchsia!'])
+        'ssh', self.device.get_ssh_cmd(['echo running on fuchsia!'])[1:])
     result = ssh_test_process.run_and_wait()
     if result.return_code or result.timed_out:
       raise fuchsia.errors.FuchsiaConnectionError(
