@@ -689,28 +689,42 @@ class RegularBuild(Build):
 
   def setup(self):
     """Sets up build with a particular revision."""
-    self._pre_setup()
-    environment.set_value('BUILD_URL', self.build_url)
+    if environment.platform() != 'FUCHSIA':
+      self._pre_setup()
+      environment.set_value('BUILD_URL', self.build_url)
 
-    logs.log('Retrieving build r%d.' % self.revision)
+      logs.log('Retrieving build r%d.' % self.revision)
 
-    build_update = not self.exists()
-    if build_update:
-      if not _unpack_build(self.base_build_dir, self.build_dir, self.build_url,
-                           self.target_weights):
-        return False
+      build_update = not self.exists()
+      if build_update:
+        if not _unpack_build(self.base_build_dir, self.build_dir, self.build_url,
+                             self.target_weights):
+          return False
 
-      logs.log('Retrieved build r%d.' % self.revision)
+        logs.log('Retrieved build r%d.' % self.revision)
+      else:
+        _set_random_fuzz_target_for_fuzzing_if_needed(
+            _get_fuzz_targets_from_dir(self.build_dir), self.target_weights)
+
+        # We have the revision required locally, no more work to do, other than
+        # setting application path environment variables.
+        logs.log('Build already exists.')
+
+      self._setup_application_path(build_update=build_update)
+      self._post_setup_success(update_revision=build_update)
     else:
-      _set_random_fuzz_target_for_fuzzing_if_needed(
-          _get_fuzz_targets_from_dir(self.build_dir), self.target_weights)
-
-      # We have the revision required locally, no more work to do, other than
-      # setting application path environment variables.
-      logs.log('Build already exists.')
-
-    self._setup_application_path(build_update=build_update)
-    self._post_setup_success(update_revision=build_update)
+      logs.log('Retrieving build %d.' % self.revision)
+      # TODO add self.exists() check for Fuchsia
+      # TODO use the _unpack_build logic?
+      # TO ACTUAL DO: just gsutil download for now
+      logs.log('Retrieved build r%d.', % self.revision)
+      # TODO do i need _set_random_fuzz_target_for_fuzzing_if_needed, or _get_fuzz_targets_from_dir?
+      # TODO do i need _setup_application_path?
+      # TODO do i need _post_setup_success?
+      # TO ACTUAL DO: get list of fuzz targets here, pass it to this function
+      fuzz_target = fuzzer_selection.select_fuzz_target(fuzz_targets, target_weights)
+      environment.set_value('FUZZ_TARGET', fuzz_target)
+      return True
     return True
 
 
@@ -1087,37 +1101,46 @@ def setup_trunk_build():
 
 def setup_regular_build(revision):
   """Sets up build with a particular revision."""
-  release_build_bucket_path = environment.get_value('RELEASE_BUILD_BUCKET_PATH')
-  release_build_urls = get_build_urls_list(release_build_bucket_path)
-  job_type = environment.get_value('JOB_NAME')
-  if not release_build_urls:
-    logs.log_error('Error getting release build urls for job %s.' % job_type)
-    return None
+  if environment.platform() != 'FUCHSIA':
+    release_build_bucket_path = environment.get_value('RELEASE_BUILD_BUCKET_PATH')
+    release_build_urls = get_build_urls_list(release_build_bucket_path)
+    job_type = environment.get_value('JOB_NAME')
+    if not release_build_urls:
+      logs.log_error('Error getting release build urls for job %s.' % job_type)
+      return None
 
-  release_build_url = revisions.find_build_url(release_build_bucket_path,
-                                               release_build_urls, revision)
-  if not release_build_url:
-    logs.log_error(
-        'Error getting build url for job %s (r%d).' % (job_type, revision))
+    release_build_url = revisions.find_build_url(release_build_bucket_path,
+                                                 release_build_urls, revision)
+    if not release_build_url:
+      logs.log_error(
+          'Error getting build url for job %s (r%d).' % (job_type, revision))
 
-    # Try setting up trunk build.
-    return setup_trunk_build()
+      # Try setting up trunk build.
+      return setup_trunk_build()
 
-  base_build_dir = _base_build_dir(release_build_bucket_path)
+    base_build_dir = _base_build_dir(release_build_bucket_path)
 
-  build_class = RegularBuild
-  if environment.is_trusted_host():
-    from bot.untrusted_runner import build_setup_host
-    build_class = build_setup_host.RemoteRegularBuild
+    build_class = RegularBuild
+    if environment.is_trusted_host():
+      from bot.untrusted_runner import build_setup_host
+      build_class = build_setup_host.RemoteRegularBuild
 
-  target_weights = fuzzer_selection.get_fuzz_target_weights()
-  build = build_class(
-      base_build_dir,
-      revision,
-      release_build_url,
-      target_weights=target_weights)
-  if build.setup():
-    return build
+    target_weights = fuzzer_selection.get_fuzz_target_weights()
+    build = build_class(
+        base_build_dir,
+        revision,
+        release_build_url,
+        target_weights=target_weights)
+    if build.setup():
+      return build
+  else:
+    base_build_dir = TODO
+    revision = 0
+    release_build_url = TODO
+    target_weights = fuzzer_selection.get_fuzz_target_weights()
+    build = build_class(base_build_dir, revision, release_build_url, target_weights)
+    if build.setup():
+      return build
 
   return None
 
