@@ -343,7 +343,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
           'FUCHSIA_PKEY_PATH and/or FUCHSIA_PORTNUM and/or FUCHSIA_RESOURCES_DIR was not set')
     self.host = Host.from_dir(os.path.join(fuchsia_resources_dir, 'build', 'out', 'default'))
     self.device = Device(self.host, 'localhost', fuchsia_portnum)
-    self.fuzzers = Fuzzer.filter(self.host.fuzzers, '')
+    pkg, tgt = environment.get_value('FUZZ_TARGET').split('/')
+    self.fuzzer = Fuzzer(self.device, pkg, tgt)
     self.device.set_ssh_option('StrictHostKeyChecking no')
     self.device.set_ssh_option('UserKnownHostsFile=/dev/null')
     self.device.set_ssh_identity(fuchsia_pkey_path)
@@ -363,8 +364,9 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            extra_env=None):
     """LibFuzzerCommon.fuzz override."""
     print("TEST QEMU!!!")
-    return self._test_qemu_ssh()
-    # TO ACTUAL DO: have this run env('FUZZ_TARGET') until done
+    self._test_qemu_ssh()
+    print("Run the fuzzer!")
+    return self.fuzzer.run()
 
   def run_single_testcase(self,
                           testcase_path,

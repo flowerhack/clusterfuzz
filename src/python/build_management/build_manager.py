@@ -31,11 +31,16 @@ from base import utils
 from build_management import revisions
 from datastore import data_types
 from datastore import ndb_utils
+from fuchsia_util.lib.host import Host
+from fuchsia_util.lib.device import Device
+from fuchsia_util.lib.fuzzer import Fuzzer
 from fuzzing import fuzzer_selection
 from google_cloud_utils import blobs
+from google_cloud_utils import gsutil
 from google_cloud_utils import storage
 from metrics import logs
 from platforms import android
+from platforms import fuchsia
 from system import archive
 from system import environment
 from system import shell
@@ -714,16 +719,60 @@ class RegularBuild(Build):
       self._post_setup_success(update_revision=build_update)
     else:
       logs.log('Retrieving build %d.' % self.revision)
-      # TODO add self.exists() check for Fuchsia
-      # TODO use the _unpack_build logic?
-      # TO ACTUAL DO: just gsutil download for now
+      # TODO(flowerhack) add self.exists() check for Fuchsia
+      # TODO(flowerhack) use the _unpack_build logic?
+
+      # Bucket for QEMU resources.
+      # TODO(flowerhack) pull directly from CIPD for these.
+      resources_dir = environment.get_value('RESOURCES_DIR')
+      if not resources_dir:
+        raise fuchsia.errors.FuchsiaConfigError('Could not find RESOURCES_DIR')
+      fuchsia_resources_dir = os.path.join(resources_dir, 'fuchsia')
+      shell.create_directory(fuchsia_resources_dir, recreate=True)
+      fuchsia_resources_url = environment.get_value('FUCHSIA_RESOURCES_URL')
+      if not fuchsia_resources_url:
+        raise fuchsia.errors.FuchsiaConfigError(
+            'Could not find path for remote'
+            'Fuchsia resources bucket (FUCHSIA_RESOURCES_URL')
+      gsutil_command_arguments = [
+        '-m', 'cp', '-r', fuchsia_resources_url, fuchsia_resources_dir
+      ]
+      logs.log("Beginning Fuchsia SDK download.")
+      result = gsutil.GSUtilRunner().run_gsutil(gsutil_command_arguments)
+      if result.return_code or result.timed_out:
+        raise fuchsia.errors.FuchsiaSdkError('Failed to download Fuchsia'
+                                 'resources: ' + result.output)
+      logs.log("Fuchsia SDK download complete.")    logs.log("Fuchsia SDK download complete.")
+
+      # Bucket for build resources. Necessary for fuzzer seleciton.
+      logs.log("Fetching Fuchsia build.")
+      fuchsia_build_url = environment.get_value('FUCHSIA_BUILD_URL')
+      if not fuchsia_build_url:
+        raise fuchsia.errors.FuchsiaConfigError(
+          'Could not find path for remote'
+          'Fuchsia build bucket (FUCHSIA BUILD URL')
+
+      gsutil_command_arguments = [
+        '-m', 'cp', '-r', fuchsia_build_url, fuchsia_resources_dir
+      ]
+      logs.log("Beginning Fuchsia build download.")
+      result = gsutil.GSUtilRunner().run_gsutil(gsutil_command_arguments)
+      if result.return_code or result.timed_out:
+        raise fuchsia.errors.FuchsiaSdkError('Failed to download Fuchsia '
+                                     'resources: ' + result.output)
+
       logs.log('Retrieved build r%d.', % self.revision)
-      # TODO do i need _set_random_fuzz_target_for_fuzzing_if_needed, or _get_fuzz_targets_from_dir?
-      # TODO do i need _setup_application_path?
-      # TODO do i need _post_setup_success?
-      # TO ACTUAL DO: get list of fuzz targets here, pass it to this function
+      # TODO(flowerhack) do i need _set_random_fuzz_target_for_fuzzing_if_needed, or _get_fuzz_targets_from_dir?
+      # TODO(flowerhack) do i need _setup_application_path?
+      # TODO(flowerhack) do i need _post_setup_success?
+      # ACTUAL TODO(flowerhack): get list of fuzz targets here, pass it to this function
+
+      logs.log('Extracting fuzz targets.')
+      host = Host.from_dir(os.path.join(fuchsia_resources_dir, 'build', 'out', 'default'))
+      fuzz_targets = Fuzzer.filter(self.host.fuzzers, '')
       fuzz_target = fuzzer_selection.select_fuzz_target(fuzz_targets, target_weights)
-      environment.set_value('FUZZ_TARGET', fuzz_target)
+      environment.set_value('FUZZ_TARGET', str(fuzz_target))
+      logs.log('Extracted fuzz target.')
       return True
     return True
 
@@ -1134,9 +1183,9 @@ def setup_regular_build(revision):
     if build.setup():
       return build
   else:
-    base_build_dir = TODO
+    base_build_dir = TODO(flowerhack)
     revision = 0
-    release_build_url = TODO
+    release_build_url = TODO(flowerhack)
     target_weights = fuzzer_selection.get_fuzz_target_weights()
     build = build_class(base_build_dir, revision, release_build_url, target_weights)
     if build.setup():
