@@ -17,6 +17,7 @@ from builtins import object
 from builtins import range
 import datetime
 import os
+import random
 import re
 import six
 import subprocess
@@ -694,86 +695,83 @@ class RegularBuild(Build):
 
   def setup(self):
     """Sets up build with a particular revision."""
-    if environment.platform() != 'FUCHSIA':
-      self._pre_setup()
-      environment.set_value('BUILD_URL', self.build_url)
+    self._pre_setup()
+    environment.set_value('BUILD_URL', self.build_url)
+    logs.log('Retrieving build r%d.' % self.revision)
+    build_update = not self.exists()
+    if build_update:
+      if not _unpack_build(self.base_build_dir, self.build_dir, self.build_url,
+                           self.target_weights):
+        return False
 
-      logs.log('Retrieving build r%d.' % self.revision)
-
-      build_update = not self.exists()
-      if build_update:
-        if not _unpack_build(self.base_build_dir, self.build_dir, self.build_url,
-                             self.target_weights):
-          return False
-
-        logs.log('Retrieved build r%d.' % self.revision)
-      else:
-        _set_random_fuzz_target_for_fuzzing_if_needed(
-            _get_fuzz_targets_from_dir(self.build_dir), self.target_weights)
-
-        # We have the revision required locally, no more work to do, other than
-        # setting application path environment variables.
-        logs.log('Build already exists.')
-
-      self._setup_application_path(build_update=build_update)
-      self._post_setup_success(update_revision=build_update)
+      logs.log('Retrieved build r%d.' % self.revision)
     else:
-      logs.log('Retrieving build %d.' % self.revision)
-      # TODO(flowerhack) add self.exists() check for Fuchsia
-      # TODO(flowerhack) use the _unpack_build logic?
+      _set_random_fuzz_target_for_fuzzing_if_needed(
+          _get_fuzz_targets_from_dir(self.build_dir), self.target_weights)
 
-      # Bucket for QEMU resources.
-      # TODO(flowerhack) pull directly from CIPD for these.
-      resources_dir = environment.get_value('RESOURCES_DIR')
-      if not resources_dir:
-        raise fuchsia.errors.FuchsiaConfigError('Could not find RESOURCES_DIR')
-      fuchsia_resources_dir = os.path.join(resources_dir, 'fuchsia')
-      shell.create_directory(fuchsia_resources_dir, recreate=True)
-      fuchsia_resources_url = environment.get_value('FUCHSIA_RESOURCES_URL')
-      if not fuchsia_resources_url:
-        raise fuchsia.errors.FuchsiaConfigError(
-            'Could not find path for remote'
-            'Fuchsia resources bucket (FUCHSIA_RESOURCES_URL')
-      gsutil_command_arguments = [
-        '-m', 'cp', '-r', fuchsia_resources_url, fuchsia_resources_dir
-      ]
-      logs.log("Beginning Fuchsia SDK download.")
-      result = gsutil.GSUtilRunner().run_gsutil(gsutil_command_arguments)
-      if result.return_code or result.timed_out:
-        raise fuchsia.errors.FuchsiaSdkError('Failed to download Fuchsia'
-                                 'resources: ' + result.output)
-      logs.log("Fuchsia SDK download complete.")    logs.log("Fuchsia SDK download complete.")
+      # We have the revision required locally, no more work to do, other than
+      # setting application path environment variables.
+      logs.log('Build already exists.')
 
-      # Bucket for build resources. Necessary for fuzzer seleciton.
-      logs.log("Fetching Fuchsia build.")
-      fuchsia_build_url = environment.get_value('FUCHSIA_BUILD_URL')
-      if not fuchsia_build_url:
-        raise fuchsia.errors.FuchsiaConfigError(
-          'Could not find path for remote'
-          'Fuchsia build bucket (FUCHSIA BUILD URL')
+    self._setup_application_path(build_update=build_update)
+    self._post_setup_success(update_revision=build_update)
 
-      gsutil_command_arguments = [
-        '-m', 'cp', '-r', fuchsia_build_url, fuchsia_resources_dir
-      ]
-      logs.log("Beginning Fuchsia build download.")
-      result = gsutil.GSUtilRunner().run_gsutil(gsutil_command_arguments)
-      if result.return_code or result.timed_out:
-        raise fuchsia.errors.FuchsiaSdkError('Failed to download Fuchsia '
-                                     'resources: ' + result.output)
+    return True
 
-      logs.log('Retrieved build r%d.', % self.revision)
-      # TODO(flowerhack) do i need _set_random_fuzz_target_for_fuzzing_if_needed, or _get_fuzz_targets_from_dir?
-      # TODO(flowerhack) do i need _setup_application_path?
-      # TODO(flowerhack) do i need _post_setup_success?
-      # ACTUAL TODO(flowerhack): get list of fuzz targets here, pass it to this function
 
-      logs.log('Extracting fuzz targets.')
-      host = Host.from_dir(os.path.join(fuchsia_resources_dir, 'build', 'out', 'default'))
-      fuzz_targets = Fuzzer.filter(self.host.fuzzers, '')
-      fuzz_target = fuzzer_selection.select_fuzz_target(fuzz_targets, target_weights)
-      environment.set_value('FUZZ_TARGET', str(fuzz_target))
-      logs.log('Extracted fuzz target.')
-      return True
+class FuchsiaBuild(Build):
+
+  def __init__(self,
+               base_build_dir,
+               revision,
+               build_url,
+               build_dir_name='revisions',
+               target_weights=None):
+    self.base_build_dir = ''
+    self.build_url = ''
+    self.build_dir_name = ''
+    self._build_dir = ''
+    self.target_weights = target_weights
+    self.revision = 0
+
+  def setup(self):
+    logs.log('Retrieving build %d.' % self.revision)
+    # TODO(flowerhack) add self.exists() check for Fuchsia
+    # TODO(flowerhack) use the _unpack_build logic?
+
+    # Bucket for QEMU resources.
+    # TODO(flowerhack) pull directly from CIPD for these.
+    fuchsia_resources_dir = fuchsia.device.initialize_resources_dir()
+    environment.set_value('FUCHSIA_RESOURCES_DIR', fuchsia_resources_dir)
+
+    logs.log('Retrieved build r%d.' % self.revision)
+    # TODO(flowerhack) do i need _set_random_fuzz_target_for_fuzzing_if_needed, or _get_fuzz_targets_from_dir?
+    # TODO(flowerhack) do i need _setup_application_path?
+    # TODO(flowerhack) do i need _post_setup_success?
+    # ACTUAL TODO(flowerhack): get list of fuzz targets here, pass it to this function
+
+    logs.log('Extracting fuzz targets.' + fuchsia_resources_dir)
+    print("Extracting fuzz targets." + fuchsia_resources_dir)
+    environment.set_value('FUCHSIA_DIR', os.path.join(fuchsia_resources_dir, 'build'))
+
+    symbolize_path = os.path.join(fuchsia_resources_dir, 'build', 'zircon', 'prebuilt', 'downloads', 'symbolize')
+    os.chmod(symbolize_path, 0o711)
+    print("perms of symbolize_path are:" + symbolize_path)
+    print(oct(os.stat(symbolize_path)[0])[-3:])
+    llvm_symbolizer_path = os.path.join(fuchsia_resources_dir, 'build', 'buildtools', 'linux-x64', 'clang', 'bin', 'llvm-symbolizer')
+    os.chmod(llvm_symbolizer_path, 0o711)
+
+    print("perms of symbolize_path are:" + symbolize_path)
+    print(oct(os.stat(symbolize_path)[0])[-3:])
+    host = Host.from_dir(
+        os.path.join(fuchsia_resources_dir, 'build', 'out', 'default'))
+    fuzz_targets = Fuzzer.filter(host.fuzzers, '')
+    fuzz_target = random.choice(fuzz_targets)
+    #fuzz_target = fuzzer_selection.select_fuzz_target(fuzz_targets,
+    #                                                  self.target_weights)
+    environment.set_value('FUZZ_TARGET', str(fuzz_target))
+    print(str('Extracted fuzz target ' + fuzz_target[0] + '/' + fuzz_target[1]))
+    logs.log('Extracted fuzz target.')
     return True
 
 
@@ -1150,48 +1148,51 @@ def setup_trunk_build():
 
 def setup_regular_build(revision):
   """Sets up build with a particular revision."""
-  if environment.platform() != 'FUCHSIA':
-    release_build_bucket_path = environment.get_value('RELEASE_BUILD_BUCKET_PATH')
-    release_build_urls = get_build_urls_list(release_build_bucket_path)
-    job_type = environment.get_value('JOB_NAME')
-    if not release_build_urls:
-      logs.log_error('Error getting release build urls for job %s.' % job_type)
-      return None
+  release_build_bucket_path = environment.get_value('RELEASE_BUILD_BUCKET_PATH')
+  release_build_urls = get_build_urls_list(release_build_bucket_path)
+  job_type = environment.get_value('JOB_NAME')
+  if not release_build_urls:
+    logs.log_error('Error getting release build urls for job %s.' % job_type)
+    return None
 
-    release_build_url = revisions.find_build_url(release_build_bucket_path,
-                                                 release_build_urls, revision)
-    if not release_build_url:
-      logs.log_error(
-          'Error getting build url for job %s (r%d).' % (job_type, revision))
+  release_build_url = revisions.find_build_url(release_build_bucket_path,
+                                               release_build_urls, revision)
+  if not release_build_url:
+    logs.log_error(
+        'Error getting build url for job %s (r%d).' % (job_type, revision))
 
-      # Try setting up trunk build.
-      return setup_trunk_build()
+    # Try setting up trunk build.
+    return setup_trunk_build()
 
-    base_build_dir = _base_build_dir(release_build_bucket_path)
+  base_build_dir = _base_build_dir(release_build_bucket_path)
 
-    build_class = RegularBuild
-    if environment.is_trusted_host():
-      from bot.untrusted_runner import build_setup_host
-      build_class = build_setup_host.RemoteRegularBuild
+  build_class = RegularBuild
+  if environment.is_trusted_host():
+    from bot.untrusted_runner import build_setup_host
+    build_class = build_setup_host.RemoteRegularBuild
 
-    target_weights = fuzzer_selection.get_fuzz_target_weights()
-    build = build_class(
-        base_build_dir,
-        revision,
-        release_build_url,
-        target_weights=target_weights)
-    if build.setup():
-      return build
-  else:
-    base_build_dir = TODO(flowerhack)
-    revision = 0
-    release_build_url = TODO(flowerhack)
-    target_weights = fuzzer_selection.get_fuzz_target_weights()
-    build = build_class(base_build_dir, revision, release_build_url, target_weights)
-    if build.setup():
-      return build
-
+  target_weights = fuzzer_selection.get_fuzz_target_weights()
+  build = build_class(
+      base_build_dir,
+      revision,
+      release_build_url,
+      target_weights=target_weights)
+  if build.setup():
+    return build
   return None
+
+
+def setup_fuchsia_build():
+  """Sets up Fuchsia build."""
+  base_build_dir = ''
+  revision = 0
+  release_build_url = ''
+  target_weights = {}
+  #target_weights = fuzzer_selection.get_fuzz_target_weights()
+  build = FuchsiaBuild(base_build_dir, revision, release_build_url,
+                      target_weights)
+  if build.setup():
+    return build
 
 
 def setup_symbolized_builds(revision):
@@ -1319,6 +1320,9 @@ def setup_system_binary():
 
 def setup_build(revision=0):
   """Set up a custom or regular build based on revision."""
+  if environment.platform() == 'FUCHSIA':
+    return setup_fuchsia_build()
+
   # For custom binaries we always use the latest version. Revision is ignored.
   custom_binary = environment.get_value('CUSTOM_BINARY')
   if custom_binary:

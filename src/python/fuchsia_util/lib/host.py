@@ -35,7 +35,7 @@ class Host(object):
     host.set_build_dir(host.find_build_dir())
     return host
 
-  @classmethod #NOTE only addition
+  @classmethod  #NOTE only addition
   def from_dir(cls, dir):
     host = Host()
     host.set_build_dir(dir)
@@ -87,6 +87,8 @@ class Host(object):
 
   def set_symbolizer(self, executable, symbolizer):
     """Sets the paths to both the wrapper and LLVM symbolizers."""
+    print("perms of executable are: " + executable)
+    print(oct(os.stat(executable)[0])[-3:])
     if not os.path.exists(executable) or not os.access(executable, os.X_OK):
       raise Host.ConfigError('Invalid symbolize binary: ' + executable)
     if not os.path.exists(symbolizer) or not os.access(symbolizer, os.X_OK):
@@ -113,7 +115,7 @@ class Host(object):
     platform = 'mac-x64' if os.uname()[0] == 'Darwin' else 'linux-x64'
     self.set_platform(platform)
     self.set_symbolizer(
-        Host.join('zircon', 'prebuilt', 'downloads', 'symbolize'),
+        Host.join('zircon', 'prebuilt', 'downloads', 'symbolize'), # change
         Host.join('buildtools', platform, 'clang', 'bin', 'llvm-symbolizer'))
     json_file = Host.join(build_dir, 'fuzzers.json')
     # fuzzers.json isn't emitted in release builds

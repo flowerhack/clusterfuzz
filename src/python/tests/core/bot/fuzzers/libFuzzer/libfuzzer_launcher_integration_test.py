@@ -21,6 +21,7 @@ import unittest
 
 import parameterized
 
+from build_management import build_manager
 from bot.fuzzers import libfuzzer
 from bot.fuzzers import utils as fuzzer_utils
 from bot.fuzzers.libFuzzer import launcher
@@ -763,8 +764,10 @@ class TestLauncherFuchsia(BaseLauncherTest):
     # TODO(flowerhack): Fuchsia's `fuzz` only calls 'echo running on fuchsia!'
     # right now by default, but we'll call it explicitly in here as we
     # diversity `fuzz`'s functionality
+    build_manager.setup_fuchsia_build()
+    environment.set_value('FUZZ_TARGET', 'example_fuzzers/baz_fuzzer')
     qemu_process = fuchsia.device.qemu_setup()
     testcase_path = setup_testcase_and_corpus('aaaa', 'empty_corpus', fuzz=True)
     output = run_launcher(testcase_path, 'test_fuzzer')
-    self.assertIn('running on fuchsia!', output)
+    self.assertIn('Command: run \'fuchsia-pkg://fuchsia.com/example_fuzzers#meta/baz_fuzzer.cmx\'', output)
     qemu_process.kill()

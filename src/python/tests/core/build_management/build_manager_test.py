@@ -155,6 +155,22 @@ class TrunkBuildTest(unittest.TestCase):
     self.assertEqual(0, self.mock.setup_regular_build.call_count)
 
 
+class FuchsiaBuildTest(fake_filesystem_unittest.TestCase):
+  """Tests for Fuchsia build setup."""
+
+  def setUp(self):
+    pass
+
+  def _assert_env_vars(self):
+    self.assertTrue(os.environ['FUZZ_TARGET'])
+
+  def test_setup(self):
+    """Tests setting up a build."""
+    build = build_manager.setup_fuchsia_build()
+    self.assertIsInstance(build, build_manager.FuchsiaBuild)
+    self._assert_env_vars()
+
+
 class RegularBuildTest(fake_filesystem_unittest.TestCase):
   """Tests for regular build setup."""
 

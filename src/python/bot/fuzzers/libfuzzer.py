@@ -340,8 +340,10 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     fuchsia_resources_dir = environment.get_value('FUCHSIA_RESOURCES_DIR')
     if not fuchsia_pkey_path or not fuchsia_portnum or not fuchsia_resources_dir:
       raise fuchsia.errors.FuchsiaConfigError(
-          'FUCHSIA_PKEY_PATH and/or FUCHSIA_PORTNUM and/or FUCHSIA_RESOURCES_DIR was not set')
-    self.host = Host.from_dir(os.path.join(fuchsia_resources_dir, 'build', 'out', 'default'))
+          'FUCHSIA_PKEY_PATH and/or FUCHSIA_PORTNUM and/or FUCHSIA_RESOURCES_DIR was not set'
+      )
+    self.host = Host.from_dir(
+        os.path.join(fuchsia_resources_dir, 'build', 'out', 'default'))
     self.device = Device(self.host, 'localhost', fuchsia_portnum)
     pkg, tgt = environment.get_value('FUZZ_TARGET').split('/')
     self.fuzzer = Fuzzer(self.device, pkg, tgt)
@@ -366,7 +368,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     print("TEST QEMU!!!")
     self._test_qemu_ssh()
     print("Run the fuzzer!")
-    return self.fuzzer.run()
+    # Doing a timeout, to work around process-exit issue?
+    return self.fuzzer.run([])
 
   def run_single_testcase(self,
                           testcase_path,
@@ -382,12 +385,15 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
   def _test_qemu_ssh(self):
     """Tests that a VM is up and can be successfully SSH'd into.
     Raises an exception if no success after MAX_SSH_RETRIES."""
-    
 
     # TODO log the actual command
     print('Attempting SSH.')
     ssh_test_process = new_process.ProcessRunner(
-        'ssh', self.device.get_ssh_cmd(['echo running on fuchsia!'])[1:])
+        'ssh',
+        self.device.get_ssh_cmd(['echo running on fuchsia!'])[1:])
+    # the ssh command honestly looks fine.
+    #raise fuchsia.errors.FuchsiaConnectionError(str(ssh_test_process.get_command()))
+    print("here goes")
     result = ssh_test_process.run_and_wait()
     if result.return_code or result.timed_out:
       raise fuchsia.errors.FuchsiaConnectionError(

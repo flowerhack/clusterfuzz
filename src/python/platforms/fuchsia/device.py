@@ -55,9 +55,11 @@ def qemu_setup():
 
   # First download the Fuchsia resources locally.
   print("init steps")
-  
+  fuchsia_resources_dir = environment.get_value('FUCHSIA_RESOURCES_DIR')
+  if not fuchsia_resources_dir:
+    raise errors.FuchsiaConfigError('Could not find FUCHSIA_RESOURCES_DIR')
 
-  fuchsia_resources_dir = initialize_resources_dir()
+  #fuchsia_resources_dir = initialize_resources_dir()
 
   # Then, save paths for necessary commands later.
   qemu_path = os.path.join(fuchsia_resources_dir, 'qemu-for-fuchsia', 'bin',
@@ -116,7 +118,8 @@ def qemu_setup():
 
   # Get the list of fuzzers for ClusterFuzz to choose from.
   # TODO how to pipe `fuzzers` back into fuzzer_selection?
-  host = Host.from_dir(os.path.join(fuchsia_resources_dir, 'build', 'out', 'default'))
+  host = Host.from_dir(
+      os.path.join(fuchsia_resources_dir, 'build', 'out', 'default'))
   device = Device(host, 'localhost', str(port))
   fuzzers = Fuzzer.filter(host.fuzzers, '')
 
@@ -161,12 +164,11 @@ def initialize_resources_dir():
   logs.log("Fetching Fuchsia build.")
   fuchsia_build_url = environment.get_value('FUCHSIA_BUILD_URL')
   if not fuchsia_build_url:
-    raise errors.FuchsiaConfigError(
-      'Could not find path for remote'
-      'Fuchsia build bucket (FUCHSIA BUILD URL')
+    raise errors.FuchsiaConfigError('Could not find path for remote'
+                                    'Fuchsia build bucket (FUCHSIA BUILD URL')
 
   gsutil_command_arguments = [
-    '-m', 'cp', '-r', fuchsia_build_url, fuchsia_resources_dir
+      '-m', 'cp', '-r', fuchsia_build_url, fuchsia_resources_dir
   ]
   logs.log("Beginning Fuchsia build download.")
   result = gsutil.GSUtilRunner().run_gsutil(gsutil_command_arguments)
