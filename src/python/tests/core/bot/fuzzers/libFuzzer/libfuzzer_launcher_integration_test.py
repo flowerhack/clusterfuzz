@@ -679,8 +679,8 @@ class TestLauncherFuchsia(BaseLauncherTest):
     data_types.Fuzzer(
         revision=1,
         additional_environment_string=
-        'FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*\n'
-        'FUCHSIA_BUILD_URL = gs://fuchsia_build_info_v1/*\n',
+        'FUCHSIA_RESOURCES_URL = gs://fuchsia-resources-05-20-2019/*\n'
+        'FUCHSIA_BUILD_URL = gs://fuchsia-build-info-05-20-2019/*\n',
         builtin=True,
         differential=False,
         file_size='builtin',
@@ -713,8 +713,8 @@ class TestLauncherFuchsia(BaseLauncherTest):
     data_types.Job(
         environment_string=(
             'CUSTOM_BINARY = True\n'
-            'FUCHSIA_RESOURCES_URL = gs://fuchsia-on-clusterfuzz-v2/*\n'
-            'FUCHSIA_BUILD_URL = gs://fuchsia_build_info_v1/*\n'
+            'FUCHSIA_RESOURCES_URL = gs://fuchsia-resources-05-20-2019/*\n'
+            'FUCHSIA_BUILD_URL = gs://fuchsia-build-info-05-20-2019/*\n'
             'QUEUE_OVERRIDE=FUCHSIA\n'
             'OS_OVERRIDE=FUCHSIA'),
         name='libfuzzer_asan_test_fuzzer',
@@ -749,8 +749,8 @@ class TestLauncherFuchsia(BaseLauncherTest):
     environment.set_value('QUEUE_OVERRIDE', 'FUCHSIA')
     environment.set_value('OS_OVERRIDE', 'FUCHSIA')
     environment.set_value('FUCHSIA_RESOURCES_URL',
-                          'gs://fuchsia-on-clusterfuzz-v2/*')
-    environment.set_value('FUCHSIA_BUILD_URL', 'gs://fuchsia_build_info_v1/*')
+                          'gs://fuchsia-resources-05-20-2019/*')
+    environment.set_value('FUCHSIA_BUILD_URL', 'gs://fuchsia-build-info-05-20-2019/*')
     # set_bot_environment gives us access to RESOURCES_DIR
     environment.set_bot_environment()
     # Cannot simply call super(TestLauncherFuchsia).setUp, because the
@@ -765,9 +765,11 @@ class TestLauncherFuchsia(BaseLauncherTest):
     # right now by default, but we'll call it explicitly in here as we
     # diversity `fuzz`'s functionality
     build_manager.setup_fuchsia_build()
-    environment.set_value('FUZZ_TARGET', 'example_fuzzers/baz_fuzzer')
+    environment.set_value('FUZZ_TARGET', 'example_fuzzers/toy_fuzzer')
     qemu_process = fuchsia.device.qemu_setup()
     testcase_path = setup_testcase_and_corpus('aaaa', 'empty_corpus', fuzz=True)
     output = run_launcher(testcase_path, 'test_fuzzer')
-    self.assertIn('Command: run \'fuchsia-pkg://fuchsia.com/example_fuzzers#meta/baz_fuzzer.cmx\'', output)
+    self.assertIn('run fuchsia-pkg://fuchsia.com/example_fuzzers#meta/toy_fuzzer.cmx', output)
+    self.assertIn('SUMMARY: libFuzzer: deadly signal', output)
+    self.assertIn('Test unit written to ', output)
     qemu_process.kill()

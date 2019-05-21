@@ -82,7 +82,7 @@ class Host(object):
   def set_platform(self, platform):
     """Sets the platform used for host OS-specific behavior."""
     if not os.path.isdir(Host.join('buildtools', platform)):
-      raise Host.ConfigError('Unsupported host platform: ' + platform)
+      raise Host.ConfigError('Unsupported host platform: ' + platform + ' (full path): ' + str(os.getenv('FUCHSIA_DIR')))
     self._platform = platform
 
   def set_symbolizer(self, executable, symbolizer):
@@ -104,8 +104,8 @@ class Host(object):
     with open(json_file) as f:
       fuzz_specs = json.load(f)
     for fuzz_spec in fuzz_specs:
-      pkg = fuzz_spec['fuzz_package']
-      for tgt in fuzz_spec['fuzz_targets']:
+      pkg = fuzz_spec['fuzzers_package']
+      for tgt in fuzz_spec['fuzzers']:
         self.fuzzers.append((pkg, tgt))
 
   def set_build_dir(self, build_dir):

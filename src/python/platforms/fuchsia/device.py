@@ -45,13 +45,13 @@ def qemu_setup():
   * /.ssh/*
   * target/x64/fvm.blk
   * target/x64/fuchsia.zbi
-  * target/x64/qemu-kernel.bin
+  * target/x64/multiboot.bin
 
   * build/out/default/fuzzers.json
   * build/out/default/ids.txt
   * build/out/default.zircon/tools/*
   * build/zircon/prebuilt/downloads/symbolize
-  * buildtools/linux-x64/clang/bin/llvm-symbolizer"""
+  * build/buildtools/linux-x64/clang/bin/llvm-symbolizer"""
 
   # First download the Fuchsia resources locally.
   print("init steps")
@@ -66,7 +66,7 @@ def qemu_setup():
                            'qemu-system-x86_64')
   os.chmod(qemu_path, 0o550)
   kernel_path = os.path.join(fuchsia_resources_dir, 'target', 'x64',
-                             'qemu-kernel.bin')
+                             'multiboot.bin')
   os.chmod(kernel_path, 0o644)
   pkey_path = os.path.join(fuchsia_resources_dir, '.ssh', 'pkey')
   os.chmod(pkey_path, 0o400)
@@ -182,10 +182,10 @@ def initialize_resources_dir():
 def extend_fvm(fuchsia_resources_dir, drive_path):
   """The FVM is minimally sized to begin with; extend it to make room for
   ephemeral packages etc."""
-  fvm_tool_path = os.path.join(fuchsia_resources_dir, 'tools', 'fvm')
+  fvm_tool_path = os.path.join(fuchsia_resources_dir, 'build', 'out', 'default.zircon', 'tools', 'fvm')
   os.chmod(fvm_tool_path, 0o500)
   process = new_process.ProcessRunner(fvm_tool_path,
-                                      [drive_path, 'extend', '--length', '1G'])
+                                      [drive_path, 'extend', '--length', '2G'])
   result = process.run_and_wait()
   if result.return_code or result.timed_out:
     raise errors.FuchsiaSdkError('Failed to extend FVM: ' + result.output)
@@ -194,7 +194,7 @@ def extend_fvm(fuchsia_resources_dir, drive_path):
 def add_keys_to_zbi(fuchsia_resources_dir, initrd_path, fuchsia_zbi):
   """Adds keys to the ZBI so we can SSH into it. See:
   fuchsia.googlesource.com/fuchsia/+/refs/heads/master/sdk/docs/ssh.md"""
-  zbi_tool = os.path.join(fuchsia_resources_dir, 'tools', 'zbi')
+  zbi_tool = os.path.join(fuchsia_resources_dir, 'build', 'out', 'default.zircon', 'tools', 'zbi')
   os.chmod(zbi_tool, 0o500)
   authorized_keys_path = os.path.join(fuchsia_resources_dir, '.ssh',
                                       'authorized_keys')

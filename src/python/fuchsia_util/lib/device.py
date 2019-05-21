@@ -8,8 +8,6 @@ import os
 import re
 import subprocess
 
-from metrics import logs
-
 from host import Host
 
 
@@ -45,13 +43,13 @@ class Device(object):
     self._addr = addr
     self._ssh_opts = {}
     if port != 22:
-      self._ssh_opts['p'] = [str(port)]  # ...might fix another bug?
+      self._ssh_opts['p'] = [str(port)]
 
   def set_ssh_config(self, config_file):
     """Sets the SSH arguments to use a config file."""
     if not os.path.exists(config_file):
       raise Host.ConfigError('Unable to find SSH configuration.')
-    self._ssh_opts['-F'] = [config_file]
+    self._ssh_opts['F'] = [config_file]
 
   def set_ssh_identity(self, identity_file):
     if not os.path.exists(identity_file):
@@ -61,7 +59,7 @@ class Device(object):
   def set_ssh_option(self, option):
     """Sets SSH configuration options. Can be used multiple times."""
     if 'o' in self._ssh_opts:
-      self._ssh_opts['o'].append(option)  #fixes a bug...? i think?
+      self._ssh_opts['o'].append(option)
     else:
       self._ssh_opts['o'] = [option]
 
@@ -84,8 +82,7 @@ class Device(object):
         for arg in args:
           result.append('-' + opt)
           result.append(arg)
-    result.append(self._addr)  # fixes another bug?
-    return result + cmd  #another bug? what is this?
+    return result + cmd[1:]
 
   def _ssh(self, cmdline, stdout=subprocess.PIPE):
     """Internal wrapper around _rexec that adds the ssh command and config.
@@ -102,11 +99,8 @@ class Device(object):
 
     Raises: Same as subprocess.Popen
     """
-    
-    #cmdline = ['ssh'] + [cmdline][1:]
-    #raise Exception(str(self.get_ssh_cmd(cmdline)))
     return subprocess.Popen(
-        ['ssh'] + self.get_ssh_cmd(cmdline)[1:],
+        self.get_ssh_cmd(['ssh', self._addr] + cmdline),
         stdout=stdout,
         stderr=subprocess.STDOUT)
 
@@ -134,10 +128,6 @@ class Device(object):
         proc = self._ssh(cmdline, stdout=subprocess.PIPE)
         subprocess.check_call(['tee', logfile], stdin=proc.stdout)
       else:
-        print("in elseland")
-        print(str(self.get_ssh_cmd(['ssh', self._addr] + cmdline)))
-        logs.log_error(str(self.get_ssh_cmd(['ssh', self._addr] + cmdline)))
-        #raise Exception(str(cmdline))
         self._ssh(cmdline, stdout=None).wait()
 
   def getpids(self):

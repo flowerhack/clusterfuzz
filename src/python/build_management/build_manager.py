@@ -755,11 +755,11 @@ class FuchsiaBuild(Build):
     environment.set_value('FUCHSIA_DIR', os.path.join(fuchsia_resources_dir, 'build'))
 
     symbolize_path = os.path.join(fuchsia_resources_dir, 'build', 'zircon', 'prebuilt', 'downloads', 'symbolize')
-    os.chmod(symbolize_path, 0o711)
+    os.chmod(symbolize_path, 0o777)
     print("perms of symbolize_path are:" + symbolize_path)
     print(oct(os.stat(symbolize_path)[0])[-3:])
     llvm_symbolizer_path = os.path.join(fuchsia_resources_dir, 'build', 'buildtools', 'linux-x64', 'clang', 'bin', 'llvm-symbolizer')
-    os.chmod(llvm_symbolizer_path, 0o711)
+    os.chmod(llvm_symbolizer_path, 0o777)
 
     print("perms of symbolize_path are:" + symbolize_path)
     print(oct(os.stat(symbolize_path)[0])[-3:])

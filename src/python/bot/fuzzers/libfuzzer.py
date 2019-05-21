@@ -369,7 +369,13 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     self._test_qemu_ssh()
     print("Run the fuzzer!")
     # Doing a timeout, to work around process-exit issue?
-    return self.fuzzer.run([])
+    fuzzer_result = self.fuzzer.run([])
+    fuzzer_process_result = new_process.ProcessResult()
+    fuzzer_process_result.return_code = 0
+    fuzzer_process_result.output = ''
+    fuzzer_process_result.time_executed = 0
+    fuzzer_process_result.command = self.fuzzer.last_fuzz_cmd
+    return fuzzer_process_result
 
   def run_single_testcase(self,
                           testcase_path,
@@ -390,7 +396,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     print('Attempting SSH.')
     ssh_test_process = new_process.ProcessRunner(
         'ssh',
-        self.device.get_ssh_cmd(['echo running on fuchsia!'])[1:])
+        self.device.get_ssh_cmd(['ssh', 'localhost', 'echo running on fuchsia!'])[1:])
     # the ssh command honestly looks fine.
     #raise fuchsia.errors.FuchsiaConnectionError(str(ssh_test_process.get_command()))
     print("here goes")

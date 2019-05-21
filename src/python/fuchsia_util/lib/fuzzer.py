@@ -13,7 +13,6 @@ import time
 from device import Device
 from host import Host
 from log import Log
-from system.new_process import ProcessResult
 
 
 class Fuzzer(object):
@@ -91,6 +90,7 @@ class Fuzzer(object):
     self.host = device.host
     self.pkg = pkg
     self.tgt = tgt
+    self.last_fuzz_cmd = None
     if output:
       self._output = output
     else:
@@ -147,18 +147,10 @@ class Fuzzer(object):
     return 'fuchsia-pkg://fuchsia.com/%s#meta/%s.cmx' % (self.pkg, self.tgt)
 
   def run(self, fuzzer_args, logfile=None):
-    print("RUN ZE FUZZER")
     fuzz_cmd = ['run', self.url(), '-artifact_prefix=data'] + fuzzer_args
     print('+ ' + ' '.join(fuzz_cmd))
-    print(self.device.get_ssh_cmd)
-    print("it's go time")
+    self.last_fuzz_cmd = self.device.get_ssh_cmd(['ssh', 'localhost'] + fuzz_cmd)
     self.device.ssh(fuzz_cmd, quiet=False, logfile=logfile)
-    result = ProcessResult()
-    result.return_code = 0
-    result.output = ''
-    result.time_executed = 0
-    result.command = fuzz_cmd
-    return result
 
   def start(self, fuzzer_args):
     """Runs the fuzzer.
