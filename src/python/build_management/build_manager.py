@@ -779,9 +779,12 @@ class FuchsiaBuild(Build):
     # randomizer, instead of using random.choice().
     fuzz_target = random.choice(fuzz_targets)
     fuzz_target = str(fuzz_target[0] + '/' + fuzz_target[1])
+    fuzz_target = 'example_fuzzers/toy_fuzzer'
 
     environment.set_value('FUZZ_TARGET', fuzz_target)
     logs.log('Extracted fuzz target ' + fuzz_target)
+    # NOTE: do not setup applicaiton path! it breaks shit!
+    #self._setup_application_path()
     return True
 
 

@@ -1269,10 +1269,13 @@ def execute_task(fuzzer_name, job_type):
   # can provide a revision to use via |APP_REVISION|.
   build_manager.setup_build(revision=environment.get_value('APP_REVISION'))
 
+  logs.log("We sure set up a build.")
+
   # Check if we have an application path. If not, our build failed
   # to setup correctly.
   app_path = environment.get_value('APP_PATH')
   if not app_path:
+    logs.log("We don't have an app path")
     _track_fuzzer_run_result(fuzzer_name, 0, 0,
                              FuzzErrorCode.BUILD_SETUP_FAILED)
     return
@@ -1332,10 +1335,19 @@ def execute_task(fuzzer_name, job_type):
     qemu_process = fuchsia.device.qemu_setup()
   # Run the fuzzer to generate testcases. If error occurred while trying
   # to run the fuzzer, bail out.
-  (error_occurred, testcase_file_paths, generated_testcase_count,
-   sync_corpus_directory,
-   fuzzer_metadata) = run_fuzzer(fuzzer, fuzzer_directory, testcase_directory,
-                                 data_directory, testcase_count)
+  if platform != 'FUCHSIA':
+    (error_occurred, testcase_file_paths, generated_testcase_count,
+     sync_corpus_directory,
+     fuzzer_metadata) = run_fuzzer(fuzzer, fuzzer_directory, testcase_directory,
+                                   data_directory, testcase_count)
+  if platform == 'FUCHISA':
+    error_occurred = False
+    testcase_file_paths = ['','','','','']
+    generated_testcase_count = 5
+    sync_corpus_directory = False
+    fuzzer_metadata = {}
+    fuzzer_metadata['fuzzer_binary_name'] = 'hi_there_fuzzworld'
+
   if error_occurred:
     return
 
