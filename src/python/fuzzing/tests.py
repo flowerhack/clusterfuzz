@@ -294,6 +294,8 @@ def run_testcase(thread_index, file_path, gestures, env_copy):
     command = get_command_line_for_application(
         file_path, user_profile_index=thread_index, needs_http=needs_http)
 
+    logs.log("THIS IS the COMMAND we are USING: " + str(command))
+
     # Run testcase.
     return process_handler.run_process(
         command,
@@ -434,9 +436,15 @@ def run_testcase_and_return_result_in_queue(crash_queue,
   })
 
   try:
+    logs.log("this is running a testcase")
+    logs.log("thread index: " + str(thread_index) + ", file path: " + str(file_path) + ", gestures:" + str(gestures))
     # Run testcase and check whether a crash occurred or not.
     return_code, crash_time, output = run_testcase(thread_index, file_path,
                                                    gestures, env_copy)
+
+    logs.log("RETURN CODE IS: " + str(return_code))
+    logs.log("CRASH TIME IS " + str(crash_time))
+    logs.log("OUTPUT IS " + str(output))
 
     # Pull testcase directory to host to get any stats files.
     if environment.is_trusted_host():
@@ -447,6 +455,7 @@ def run_testcase_and_return_result_in_queue(crash_queue,
     crash_output = _get_crash_output(output)
     crash_result = CrashResult(return_code, crash_time, crash_output)
     if crash_result.is_crash():
+      logs.log("there was a crash!")
       # Initialize resource list with the testcase path.
       resource_list = [file_path]
       resource_list += get_resource_paths(crash_output)
@@ -472,6 +481,7 @@ def run_testcase_and_return_result_in_queue(crash_queue,
       # correlate it with (not upload_output).
       if upload_output:
         upload_testcase(file_path)
+    logs.log("done with is_crash branch")
 
     if upload_output:
       # Include full output for uploaded logs (crash output, merge output, etc).
@@ -855,7 +865,9 @@ def get_command_line_for_application(file_to_run='',
         all_app_args, testcase_path, testcase_file_url)
 
   # TODO(flowerhack): If we'd like blackbox fuzzing support for Fuchsia, here's
-  # where to add in our app's launch command.
+  # where to add in our app's launch command.\
+  if plt == 'FUCHSIA':
+    command += ' dummy_fuzzer_name'
 
   # Decide which directory we will run the application from.
   # We are using |app_directory| since it helps to locate pdbs

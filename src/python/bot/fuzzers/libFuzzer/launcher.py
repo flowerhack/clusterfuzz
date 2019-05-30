@@ -748,6 +748,7 @@ def move_mergeable_units(merge_directory, corpus_directory):
 
 def main(argv):
   """Run libFuzzer as specified by argv."""
+  logs.log("WE'RE NOW IN THE LAUNCHER")
   atexit.register(fuzzer_utils.cleanup)
 
   # Initialize variables.
@@ -777,6 +778,7 @@ def main(argv):
     # build directory.
     logs.log_warn('Could not find fuzz target %s.' % target_name)
     return
+  raise Exception("The fuzzer_path is " + str(fuzzer_path))
 
   # Install signal handler.
   signal.signal(signal.SIGTERM, engine_common.signal_term_handler)

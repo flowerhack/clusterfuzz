@@ -156,7 +156,10 @@ def get_high_end_task():
 def get_regular_task(queue=None):
   """Get a regular task."""
   if not queue:
+    logs.log("HI HI HI")
+    logs.log("BYE BYE BYE")
     queue = regular_queue()
+  logs.log(str(queue))
 
   pubsub_client = pubsub.PubSubClient()
   application_id = utils.get_application_id()

@@ -23,6 +23,7 @@ import random
 import re
 import six
 import sys
+import tempfile
 import time
 
 from base import dates
@@ -1183,6 +1184,7 @@ def write_crashes_to_big_query(group, context):
 
 def process_crashes(crashes, context):
   """Process a list of crashes."""
+  logs.log("Our crashes are: " + str(crashes))
   processed_groups = []
   new_crash_count = 0
   known_crash_count = 0
@@ -1240,6 +1242,7 @@ def process_crashes(crashes, context):
 
 def execute_task(fuzzer_name, job_type):
   """Runs the given fuzzer for one round."""
+  logs.log("AWW YISS IT'S A FUZZ TASK")
   failure_wait_interval = environment.get_value('FAIL_WAIT')
 
   # Update LSAN local blacklist with global blacklist.
@@ -1269,10 +1272,25 @@ def execute_task(fuzzer_name, job_type):
   # can provide a revision to use via |APP_REVISION|.
   build_manager.setup_build(revision=environment.get_value('APP_REVISION'))
 
+  logs.log("We sure set up a build.")
+
+  # Helper variables.
+  bot_name = environment.get_value('BOT_NAME')
+  data_bundle_name = fuzzer.data_bundle_name
+  platform = environment.platform()
+  platform_id = environment.get_platform_id()
+  logs.log("I think my platform is " + platform)
+
   # Check if we have an application path. If not, our build failed
   # to setup correctly.
   app_path = environment.get_value('APP_PATH')
+  # TODO(flowerhack): Progression, regression, minimize, etc tasks expect an
+  # app path to run properly. This is a little strange in Fuchsia's case, since
+  # we give a command to run on a target rather than an actual path to a
+  # binary. We don't need it to run & collect crashes, but let's come up with
+  # a consistent replacement at some point.
   if not app_path:
+    logs.log("We don't have an app path.")
     _track_fuzzer_run_result(fuzzer_name, 0, 0,
                              FuzzErrorCode.BUILD_SETUP_FAILED)
     return
@@ -1286,11 +1304,6 @@ def execute_task(fuzzer_name, job_type):
   if is_bad_build:
     return
 
-  # Helper variables.
-  bot_name = environment.get_value('BOT_NAME')
-  data_bundle_name = fuzzer.data_bundle_name
-  platform = environment.platform()
-  platform_id = environment.get_platform_id()
 
   # Get the fuzzer directory.
   fuzzer_directory = setup.get_fuzzer_directory(fuzzer_name)
@@ -1330,12 +1343,24 @@ def execute_task(fuzzer_name, job_type):
 
   if platform == 'FUCHSIA':
     qemu_process = fuchsia.device.qemu_setup()
+
+  # TODO(flowerhack): at least update this comment oh my god???
   # Run the fuzzer to generate testcases. If error occurred while trying
   # to run the fuzzer, bail out.
-  (error_occurred, testcase_file_paths, generated_testcase_count,
-   sync_corpus_directory,
-   fuzzer_metadata) = run_fuzzer(fuzzer, fuzzer_directory, testcase_directory,
-                                 data_directory, testcase_count)
+  if platform != 'FUCHSIA':
+    (error_occurred, testcase_file_paths, generated_testcase_count,
+     sync_corpus_directory,
+     fuzzer_metadata) = run_fuzzer(fuzzer, fuzzer_directory, testcase_directory,
+                                   data_directory, testcase_count)
+  else:
+    error_occurred = False
+    testcase_file_paths = ['','','','','']
+    generated_testcase_count = 5
+    sync_corpus_directory = False
+    fuzzer_metadata = {}
+    fuzzer_metadata['fuzzer_binary_name'] = 'hi_there_fuzzworld'
+
+
   if error_occurred:
     return
 
@@ -1399,7 +1424,10 @@ def execute_task(fuzzer_name, job_type):
       'App launch command is %s.' % tests.get_command_line_for_application())
 
   # Start processing the testcases.
-  while test_number < len(testcase_file_paths):
+  logs.log("Number of testcase file paths: " + str(len(testcase_file_paths)))
+  while test_number < 1:
+  #while test_number < len(testcase_file_paths):
+    logs.log("On test number " + str(test_number))
     thread_index = 0
     threads = []
 
@@ -1410,8 +1438,13 @@ def execute_task(fuzzer_name, job_type):
       break
 
     while thread_index < max_threads and test_number < len(testcase_file_paths):
-      testcase_file_path = testcase_file_paths[test_number]
-      gestures = testcases_metadata[testcase_file_path]['gestures']
+      if platform == 'FUCHSIA':
+        tempdir = tempfile.mkdtemp()
+        testcase_file_path = os.path.join(tempdir, 'testcase')
+        gestures = ''
+      else:
+        testcase_file_path = testcase_file_paths[test_number]
+        gestures = testcases_metadata[testcase_file_path]['gestures']
 
       env_copy = environment.copy()
       thread = process_handler.get_process()(
@@ -1420,6 +1453,8 @@ def execute_task(fuzzer_name, job_type):
                 env_copy, True))
 
       try:
+        #logs.log("Thread target: " + str(test.run_testcase_and_return_result_in_queue))
+
         thread.start()
       except:
         process_handler.terminate_stale_application_instances()

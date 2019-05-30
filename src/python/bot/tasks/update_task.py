@@ -126,6 +126,7 @@ def get_remote_source_revision(source_manifest_url):
 def get_newer_source_revision():
   """Returns the latest source revision if there is an update, or None if the
   current source is up to date."""
+  logs.log("who calls me?")
   if (environment.get_value('LOCAL_SRC') or
       environment.get_value('LOCAL_DEVELOPMENT')):
     logs.log('Using local source, skipping source code update.')
@@ -348,6 +349,7 @@ def run():
   # not necessary to run the init scripts.
   try:
     # If there is a newer revision, exit and let run.py update the source code.
+    logs.log("Uh calling get_newer_source_revision from update_task?")
     if get_newer_source_revision() is not None:
       if environment.is_trusted_host():
         from bot.untrusted_runner import host

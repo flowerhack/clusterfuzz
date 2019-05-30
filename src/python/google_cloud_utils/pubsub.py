@@ -26,6 +26,8 @@ from base import retry
 from google_cloud_utils import credentials
 from system import environment
 
+from metrics import logs
+
 MAX_ACK_DEADLINE = 10 * 60  # 10 minutes (the maximum).
 _DEFAULT_MAX_MESSAGES = 1000  # Arbitrary reasonably large limit.
 _PUBSUB_FAIL_RETRIES = 5
@@ -109,6 +111,8 @@ class PubSubClient(object):
       return request.execute()
     except googleapiclient.errors.HttpError as e:
       if e.resp.status == 404:
+        logs.log(e)
+        print(e)
         return None
 
       raise

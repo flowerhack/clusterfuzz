@@ -166,6 +166,7 @@ def should_update_task_status(task_name):
 
 def run_command(task_name, task_argument, job_name):
   """Run the command."""
+  logs.log("RUNNING COMMAND: " + task_name + " " + job_name)
   if task_name not in COMMAND_MAP:
     logs.log_error("Unknown command '%s'" % task_name)
     return
@@ -182,6 +183,7 @@ def run_command(task_name, task_argument, job_name):
       raise AlreadyRunningError
 
   try:
+    logs.log("EXECUTING THAT TASK")
     task_module.execute_task(task_argument, job_name)
   except errors.InvalidTestcaseError:
     # It is difficult to try to handle the case where a test case is deleted
@@ -312,6 +314,7 @@ def process_command(task):
       fuzzer_name = minimize_fuzzer_override or fuzzer_name
 
     if fuzzer_name:
+      logs.log("GOT A FUZZER NAME")
       fuzzer = data_types.Fuzzer.query(
           data_types.Fuzzer.name == fuzzer_name).get()
       additional_default_variables = ''
@@ -344,14 +347,22 @@ def process_command(task):
     tasks.add_task(task_name, task_argument, job_name)
     return
 
+  logs.log("IS THIS WHERE HTTP SORROW HAPPENS?")
+
   # Initial cleanup.
   cleanup_task_state()
+
+  logs.log("WHAT ABOUT HERE?")
 
   # Start http(s) servers.
   http_server.start()
 
+  logs.log("TIME TO START")
+
   try:
+    logs.log("Trying to run command")
     run_command(task_name, task_argument, job_name)
   finally:
+    logs.log("cleaaaaanup")
     # Final clean up.
     cleanup_task_state()

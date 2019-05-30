@@ -81,16 +81,20 @@ def task_loop():
     environment.reset_environment()
     try:
       # Run regular updates.
+      logs.log("Updating code")
       update_task.run()
+      logs.log("Track revision")
       update_task.track_revision()
 
       task = tasks.get_task()
       if not task:
+        logs.log("Where is my task?")
         continue
 
       with _Monitor(task):
         with task.lease():
           # Execute the command and delete the task.
+          logs.log("Do le task")
           commands.process_command(task)
     except SystemExit as e:
       exception_occurred = True

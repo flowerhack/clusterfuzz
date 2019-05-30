@@ -130,6 +130,7 @@ def update_source_code_if_needed():
   """Update source code if needed."""
   try:
     # Update the bot source, if there's a newer version.
+    logs.log("Calling it from run I guess?")
     newer_source_revision = update_task.get_newer_source_revision()
     if newer_source_revision is not None:
       # If source code needs update, stop the heartbeat first. As otherwise,
@@ -147,8 +148,11 @@ def run_loop(bot_command, heartbeat_command):
   atexit.register(stop_heartbeat)
 
   while True:
+    logs.log("Let's update source")
     update_source_code_if_needed()
+    logs.log("Let's start heartbeat")
     start_heartbeat(heartbeat_command)
+    logs.log("Let's start a bot")
     start_bot(bot_command)
 
     # See if our run timed out, if yes bail out.
