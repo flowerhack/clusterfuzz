@@ -30,6 +30,7 @@ from system import environment
 from system import minijail
 from system import new_process
 from system import shell
+from metrics import logs
 
 MAX_OUTPUT_LEN = 1 * 1024 * 1024  # 1 MB
 
@@ -551,6 +552,7 @@ def get_runner(fuzzer_path, temp_dir=None):
   use_minijail = environment.get_value('USE_MINIJAIL')
   build_dir = environment.get_value('BUILD_DIR')
   if use_minijail:
+    logs.log("WE'RE USING MINIJAIL SOMEHOW?")
     # Set up chroot and runner.
     if environment.is_chromeos_system_job():
       minijail_chroot = minijail.ChromeOSChroot(build_dir)
@@ -588,6 +590,7 @@ def get_runner(fuzzer_path, temp_dir=None):
 
     runner = MinijailLibFuzzerRunner(fuzzer_path, minijail_chroot)
   elif environment.platform() == 'FUCHSIA':
+    logs.log("WE'RE PICKING FUCHSIA")
     runner = FuchsiaQemuLibFuzzerRunner(fuzzer_path)
   else:
     runner = LibFuzzerRunner(fuzzer_path)

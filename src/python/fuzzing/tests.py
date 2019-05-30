@@ -20,6 +20,7 @@ import datetime
 import os
 import re
 import zlib
+import time
 
 from base import utils
 from build_management import revisions
@@ -33,6 +34,7 @@ from metrics import logs
 from platforms import android
 from system import archive
 from system import environment
+import tempfile
 from system import process_handler
 from system import shell
 
@@ -377,6 +379,8 @@ def convert_dependency_url_to_local_path(url):
 
 def _get_testcase_time(testcase_path):
   """Returns the timestamp of a testcase."""
+  if environment.platform() == 'FUCHSIA':
+    return datetime.datetime.utcnow()
   stats = fuzzer_stats.TestcaseRun.read_from_disk(testcase_path)
   if stats:
     return datetime.datetime.utcfromtimestamp(float(stats.timestamp))
@@ -390,8 +394,14 @@ def upload_testcase(testcase_path):
   if not fuzz_logs_bucket:
     return
 
-  with open(testcase_path) as file_handle:
-    testcase_contents = file_handle.read()
+  if environment.platform() == 'FUCHSIA':
+    testcase_path = tempfile.TemporaryFile()
+
+  try:
+    with open(testcase_path) as file_handle:
+      testcase_contents = file_handle.read()
+  except:
+    testcase_contents = "testcase contents"
 
   # This matches the time of the log file.
   time = _get_testcase_time(testcase_path)
@@ -401,6 +411,8 @@ def upload_testcase(testcase_path):
       testcase_contents,
       time=time,
       file_extension='.testcase')
+
+  logs.log("We uploaded testcase")
 
 
 def _get_crash_output(output):
@@ -435,8 +447,13 @@ def run_testcase_and_return_result_in_queue(crash_queue,
 
   try:
     # Run testcase and check whether a crash occurred or not.
+    logs.log("this is running a testcase")
     return_code, crash_time, output = run_testcase(thread_index, file_path,
                                                    gestures, env_copy)
+    if crash_time is None:
+      crash_time = 0
+    logs.log("RETURN CODE IS: " + str(return_code))
+    logs.log("OUTPUT IS " + str(output))
 
     # Pull testcase directory to host to get any stats files.
     if environment.is_trusted_host():
@@ -445,8 +462,12 @@ def run_testcase_and_return_result_in_queue(crash_queue,
 
     # Analyze the crash.
     crash_output = _get_crash_output(output)
+    logs.log("Our crash output is: " + str(crash_output))
+    logs.log("Our normie output is " + str(output))
     crash_result = CrashResult(return_code, crash_time, crash_output)
+    logs.log("For the record, crash_result.is_crash() is " + str(crash_result.is_crash()))
     if crash_result.is_crash():
+      logs.log("According to is_crash we hit a real crash")
       # Initialize resource list with the testcase path.
       resource_list = [file_path]
       resource_list += get_resource_paths(crash_output)
@@ -457,6 +478,8 @@ def run_testcase_and_return_result_in_queue(crash_queue,
       stack_file_path = os.path.join(crash_stacks_directory,
                                      utils.string_hash(file_path))
       utils.write_data_to_file(crash_output, stack_file_path)
+
+      logs.log("PIkachu it in a queue")
 
       # Put crash/no-crash results in the crash queue.
       crash_queue.put(
@@ -471,12 +494,18 @@ def run_testcase_and_return_result_in_queue(crash_queue,
       # Don't upload uninteresting testcases (no crash) or if there is no log to
       # correlate it with (not upload_output).
       if upload_output:
+        logs.log("Pikachu upload output")
         upload_testcase(file_path)
+    else:
+      logs.log("Apparently is_crash was false?")
 
     if upload_output:
+      logs.log("Pikachu upload output again?")
       # Include full output for uploaded logs (crash output, merge output, etc).
       crash_result_full = CrashResult(return_code, crash_time, output)
+      logs.log("Pikachu stuff stuff")
       upload_testcase_output(crash_result_full, file_path)
+      logs.log("Uploaded testcase output!")
   except Exception:
     logs.log_error('Exception occurred while running '
                    'run_testcase_and_return_result_in_queue.')
@@ -856,6 +885,8 @@ def get_command_line_for_application(file_to_run='',
 
   # TODO(flowerhack): If we'd like blackbox fuzzing support for Fuchsia, here's
   # where to add in our app's launch command.
+  if plt == 'FUCHSIA':
+    command += ' dummy_fuzzer_name'
 
   # Decide which directory we will run the application from.
   # We are using |app_directory| since it helps to locate pdbs

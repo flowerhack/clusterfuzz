@@ -523,6 +523,7 @@ def store_testcase(crash, fuzzed_keys, minimized_keys, regression, fixed,
                    timeout_multiplier, minimized_arguments):
   """Create a testcase and store it in the datastore using remote api."""
   # Initialize variable to prevent invalid values.
+  logs.log("HERE'S THE BIT WHERE WE STORE A TESTCASE")
   if archived:
     archive_state = data_types.ArchiveStatus.FUZZED
   else:
@@ -586,6 +587,8 @@ def store_testcase(crash, fuzzed_keys, minimized_keys, regression, fixed,
   if is_lsan_enabled:
     from fuzzing import leak_blacklist
     leak_blacklist.add_crash_to_global_blacklist_if_needed(testcase)
+
+  logs.log("ANNND DONE PIKAPI")
 
   return testcase_id
 

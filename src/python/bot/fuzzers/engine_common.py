@@ -18,6 +18,7 @@ import contextlib
 import glob
 import os
 import pipes
+import tempfile
 import random
 import shutil
 import sys
@@ -118,6 +119,9 @@ def find_fuzzer_path(build_directory, fuzzer_name):
       if (legacy_name_prefix + filename == fuzzer_name or
           filename == fuzzer_filename):
         return os.path.join(root, filename)
+
+  if environment.platform() == 'FUCHSIA':
+    return fuzzer_name
 
   logs.log_warn('Fuzzer: %s not found in build_directory: %s.' %
                 (fuzzer_name, build_directory))

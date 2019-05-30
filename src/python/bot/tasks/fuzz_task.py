@@ -18,6 +18,7 @@ from builtins import object
 import collections
 import datetime
 import itertools
+import tempfile
 import os
 import random
 import re
@@ -1269,10 +1270,13 @@ def execute_task(fuzzer_name, job_type):
   # can provide a revision to use via |APP_REVISION|.
   build_manager.setup_build(revision=environment.get_value('APP_REVISION'))
 
+  logs.log("We sure set up a build.")
+
   # Check if we have an application path. If not, our build failed
   # to setup correctly.
   app_path = environment.get_value('APP_PATH')
   if not app_path:
+    logs.log("We don't have an app path")
     _track_fuzzer_run_result(fuzzer_name, 0, 0,
                              FuzzErrorCode.BUILD_SETUP_FAILED)
     return
@@ -1281,6 +1285,8 @@ def execute_task(fuzzer_name, job_type):
   # If yes, bail out.
   logs.log('Checking for bad build.')
   crash_revision = environment.get_value('APP_REVISION')
+  if not crash_revision:
+    crash_revision = 0
   is_bad_build = tests.check_for_bad_build(job_type, crash_revision)
   _track_build_run_result(job_type, crash_revision, is_bad_build)
   if is_bad_build:
@@ -1332,10 +1338,19 @@ def execute_task(fuzzer_name, job_type):
     qemu_process = fuchsia.device.qemu_setup()
   # Run the fuzzer to generate testcases. If error occurred while trying
   # to run the fuzzer, bail out.
-  (error_occurred, testcase_file_paths, generated_testcase_count,
-   sync_corpus_directory,
-   fuzzer_metadata) = run_fuzzer(fuzzer, fuzzer_directory, testcase_directory,
-                                 data_directory, testcase_count)
+  if platform != 'FUCHSIA':
+    (error_occurred, testcase_file_paths, generated_testcase_count,
+     sync_corpus_directory,
+     fuzzer_metadata) = run_fuzzer(fuzzer, fuzzer_directory, testcase_directory,
+                                   data_directory, testcase_count)
+  if platform == 'FUCHSIA':
+    error_occurred = False
+    testcase_file_paths = [fuzzer_name,fuzzer_name,fuzzer_name,fuzzer_name,fuzzer_name]
+    generated_testcase_count = 5
+    sync_corpus_directory = False
+    fuzzer_metadata = {}
+    fuzzer_metadata['fuzzer_binary_name'] = 'hi_there_fuzzworld'
+
   if error_occurred:
     return
 
@@ -1410,8 +1425,13 @@ def execute_task(fuzzer_name, job_type):
       break
 
     while thread_index < max_threads and test_number < len(testcase_file_paths):
-      testcase_file_path = testcase_file_paths[test_number]
-      gestures = testcases_metadata[testcase_file_path]['gestures']
+      if platform == 'FUCHSIA':
+        #tempdir = tempfile.mkdtemp()
+        #testcase_file_path = os.path.join(tempdir, 'testcase')
+        gestures = ''
+      else:
+        testcase_file_path = testcase_file_paths[test_number]
+        gestures = testcases_metadata[testcase_file_path]['gestures']
 
       env_copy = environment.copy()
       thread = process_handler.get_process()(
@@ -1509,7 +1529,10 @@ def execute_task(fuzzer_name, job_type):
 
   # Transform tests.Crash into fuzz_task.Crash.
   # And filter the crashes (e.g. removing errorneous crashes).
+  logs.log("Before turning tests.Crash into fuzz_task.Crash we have " + str(len(crashes)) + " crashes.")
   crashes = [Crash(crash) for crash in crashes]
+
+  logs.log("We have " + str(len(crashes)) + " crashes to pass to process_crashess")
 
   # Process and save crashes to datastore.
   new_crash_count, known_crash_count, processed_groups = process_crashes(
@@ -1531,17 +1554,23 @@ def execute_task(fuzzer_name, job_type):
           thread_wait_timeout=thread_wait_timeout,
           data_directory=data_directory))
 
+  logs.log("We got through process_crashes")
+
   upload_testcase_run_stats(fuzzer_name, fully_qualified_fuzzer_name, job_type,
                             crash_revision, testcase_file_paths)
+
+  logs.log("We got through upload testcase run stats")
   upload_job_run_stats(fully_qualified_fuzzer_name, job_type, crash_revision,
                        time.time(), new_crash_count, known_crash_count,
                        generated_testcase_count, processed_groups)
+  logs.log("We got through upload job run stats")
 
   # Delete the fuzzed testcases. This is explicitly needed since
   # some testcases might reside on NFS and would otherwise be
   # left forever.
   for testcase_file_path in testcase_file_paths:
     shell.remove_file(testcase_file_path)
+  logs.log("we deleted stuff")
 
   # Explicit cleanup for large vars.
   del testcase_file_paths

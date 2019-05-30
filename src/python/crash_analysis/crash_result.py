@@ -20,6 +20,8 @@ from builtins import object
 from base import utils
 from crash_analysis import crash_analyzer
 from crash_analysis.stack_parsing import stack_analyzer
+from metrics import logs
+from system import environment
 
 
 class CrashResult(object):
@@ -38,7 +40,12 @@ class CrashResult(object):
     return self.crash_time
 
   def get_symbolized_data(self):
+    # returns a StackAnalyzerState i guess?
     """Compute symbolized crash data if necessary or return cached result."""
+    if environment.platform() == 'FUCHSIA':
+      state = stack_analyzer.StackAnalyzerState()
+      state.crash_state = self.output
+      return state
     if self._symbolized_crash_data:
       return self._symbolized_crash_data
 
@@ -48,6 +55,8 @@ class CrashResult(object):
 
   def get_unsymbolized_data(self):
     """Compute unsymbolized crash data if necessary or return cached result."""
+    if environment.platform() == 'FUCHSIA':
+      return self.output
     if self._unsymbolized_crash_data:
       return self._unsymbolized_crash_data
 
@@ -57,6 +66,8 @@ class CrashResult(object):
 
   def get_state(self, symbolized=True):
     """Return the crash state."""
+    if environment.platform() == 'FUCHSIA':
+      return self.output
     if symbolized:
       state = self.get_symbolized_data()
     else:
@@ -66,6 +77,8 @@ class CrashResult(object):
 
   def get_stacktrace(self, symbolized=True):
     """Return the crash stacktrace."""
+    if environment.platform() == 'FUCHSIA':
+      return self.output
     if symbolized:
       state = self.get_symbolized_data()
     else:
@@ -81,13 +94,20 @@ class CrashResult(object):
 
   def is_crash(self, ignore_state=False):
     """Return True if this result was a crash."""
+    logs.log("We're in crash_result.is_crash")
     crashed = crash_analyzer.is_crash(self.return_code, self.output)
     if not crashed:
+      logs.log("We decided it's not a crash")
       return False
 
     state = self.get_state(symbolized=False)
+    if environment.platform() == 'FUCHSIA':
+      ignore_state = True
     if not state.strip() and not ignore_state:
+      logs.log("We decided it's not a crash in a different way")
       return False
+
+    logs.log("crash_result.is_crash is about to return True")
 
     return True
 
@@ -98,6 +118,8 @@ class CrashResult(object):
 
   def is_security_issue(self):
     """Return True if this crash is a security issue."""
+    if environment.platform() == 'FUCHSIA':
+      return True
     state = self.get_unsymbolized_data()
     return crash_analyzer.is_security_issue(
         state.crash_stacktrace, state.crash_type, state.crash_address)

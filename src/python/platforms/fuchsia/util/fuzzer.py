@@ -20,6 +20,8 @@ import subprocess
 import time
 
 from log import Log
+# can't import this without a circular import i guess?
+#from metrics import log
 
 
 class Fuzzer(object):
@@ -154,6 +156,7 @@ class Fuzzer(object):
 
   def run(self, fuzzer_args, logfile=None):
     fuzz_cmd = ['run', self.url(), '-artifact_prefix=data'] + fuzzer_args
+    #logs.log("FUZZ COMMAND IS " + str(fuzz_cmd))
     self.last_fuzz_cmd = self.device.get_ssh_cmd(['ssh', 'localhost'] +
                                                  fuzz_cmd)
     self.device.ssh(fuzz_cmd, quiet=False, logfile=logfile)
