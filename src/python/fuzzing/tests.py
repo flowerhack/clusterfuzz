@@ -859,6 +859,8 @@ def get_command_line_for_application(file_to_run='',
 
   # TODO(flowerhack): If we'd like blackbox fuzzing support for Fuchsia, here's
   # where to add in our app's launch command.
+  if plt == 'FUCHSIA':
+    command += ' dummy_fuzzer_name'
 
   # Decide which directory we will run the application from.
   # We are using |app_directory| since it helps to locate pdbs
