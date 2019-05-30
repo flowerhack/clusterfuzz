@@ -435,8 +435,11 @@ def run_testcase_and_return_result_in_queue(crash_queue,
 
   try:
     # Run testcase and check whether a crash occurred or not.
+    logs.log("this is running a testcase")
     return_code, crash_time, output = run_testcase(thread_index, file_path,
                                                    gestures, env_copy)
+    logs.log("RETURN CODE IS: " + str(return_code))
+    logs.log("OUTPUT IS " + str(output))
 
     # Pull testcase directory to host to get any stats files.
     if environment.is_trusted_host():

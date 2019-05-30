@@ -784,7 +784,7 @@ class FuchsiaBuild(Build):
     environment.set_value('FUZZ_TARGET', fuzz_target)
     logs.log('Extracted fuzz target ' + fuzz_target)
     # NOTE: do not setup applicaiton path! it breaks shit!
-    #self._setup_application_path()
+    self._setup_application_path()
     return True
 
 

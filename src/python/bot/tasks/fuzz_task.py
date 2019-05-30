@@ -18,6 +18,7 @@ from builtins import object
 import collections
 import datetime
 import itertools
+import tempfile
 import os
 import random
 import re
@@ -1340,7 +1341,7 @@ def execute_task(fuzzer_name, job_type):
      sync_corpus_directory,
      fuzzer_metadata) = run_fuzzer(fuzzer, fuzzer_directory, testcase_directory,
                                    data_directory, testcase_count)
-  if platform == 'FUCHISA':
+  if platform == 'FUCHSIA':
     error_occurred = False
     testcase_file_paths = ['','','','','']
     generated_testcase_count = 5
@@ -1422,8 +1423,13 @@ def execute_task(fuzzer_name, job_type):
       break
 
     while thread_index < max_threads and test_number < len(testcase_file_paths):
-      testcase_file_path = testcase_file_paths[test_number]
-      gestures = testcases_metadata[testcase_file_path]['gestures']
+      if platform == 'FUCHSIA':
+        tempdir = tempfile.mkdtemp()
+        testcase_file_path = os.path.join(tempdir, 'testcase')
+        gestures = ''
+      else:
+        testcase_file_path = testcase_file_paths[test_number]
+        gestures = testcases_metadata[testcase_file_path]['gestures']
 
       env_copy = environment.copy()
       thread = process_handler.get_process()(

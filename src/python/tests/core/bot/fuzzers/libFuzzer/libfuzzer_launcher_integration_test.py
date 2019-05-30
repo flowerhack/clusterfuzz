@@ -783,6 +783,7 @@ class TestLauncherFuchsia(BaseLauncherTest):
     qemu_process = fuchsia.device.qemu_setup()
     testcase_path = setup_testcase_and_corpus('aaaa', 'empty_corpus', fuzz=True)
     output = run_launcher(testcase_path, 'test_fuzzer')
+    #raise Exception(output)
     self.assertIn(
         'localhost run \'fuchsia-pkg://fuchsia.com/example_fuzzers#meta/'
         'toy_fuzzer.cmx\'', output)
