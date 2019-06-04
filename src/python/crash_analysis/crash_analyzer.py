@@ -17,6 +17,7 @@ import re
 
 from config import local_config
 from system import environment
+from metrics import logs
 
 ASSERT_CRASH_ADDRESSES = [
     0x0000bbadbeef,
@@ -136,13 +137,17 @@ def ignore_stacktrace(crash_stacktrace):
 
 def is_crash(return_code, console_output):
   """Analyze the return code and console output to see if this was a crash."""
+  logs.log("We're in crash_analyzer.is_crash")
   if not return_code:
+    logs.log("No return code for this crash!")
     return False
 
   crash_signature = environment.get_value('CRASH_SIGNATURE')
   if crash_signature:
+    logs.log("Checking for crash signature based on " + str(crash_signature))
     return re.search(crash_signature, console_output)
 
+  logs.log("we just decided it's true w/e")
   return True
 
 

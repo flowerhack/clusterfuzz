@@ -20,6 +20,8 @@ from builtins import object
 from base import utils
 from crash_analysis import crash_analyzer
 from crash_analysis.stack_parsing import stack_analyzer
+from metrics import logs
+from system import environment
 
 
 class CrashResult(object):
@@ -81,13 +83,20 @@ class CrashResult(object):
 
   def is_crash(self, ignore_state=False):
     """Return True if this result was a crash."""
+    logs.log("We're in crash_result.is_crash")
     crashed = crash_analyzer.is_crash(self.return_code, self.output)
     if not crashed:
+      logs.log("We decided it's not a crash")
       return False
 
     state = self.get_state(symbolized=False)
+    if environment.platform() == 'FUCHSIA':
+      ignore_state = True
     if not state.strip() and not ignore_state:
+      logs.log("We decided it's not a crash in a different way")
       return False
+
+    logs.log("crash_result.is_crash is about to return True")
 
     return True
 

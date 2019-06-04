@@ -1529,6 +1529,8 @@ def execute_task(fuzzer_name, job_type):
   # And filter the crashes (e.g. removing errorneous crashes).
   crashes = [Crash(crash) for crash in crashes]
 
+  logs.log("We have " + str(len(crashes)) + " crashes to pass to process_crashess")
+
   # Process and save crashes to datastore.
   new_crash_count, known_crash_count, processed_groups = process_crashes(
       crashes=crashes,
@@ -1549,17 +1551,23 @@ def execute_task(fuzzer_name, job_type):
           thread_wait_timeout=thread_wait_timeout,
           data_directory=data_directory))
 
+  logs.log("We got through process_crashes")
+
   upload_testcase_run_stats(fuzzer_name, fully_qualified_fuzzer_name, job_type,
                             crash_revision, testcase_file_paths)
+
+  logs.log("We got through upload testcase run stats")
   upload_job_run_stats(fully_qualified_fuzzer_name, job_type, crash_revision,
                        time.time(), new_crash_count, known_crash_count,
                        generated_testcase_count, processed_groups)
+  logs.log("We got through upload job run stats")
 
   # Delete the fuzzed testcases. This is explicitly needed since
   # some testcases might reside on NFS and would otherwise be
   # left forever.
   for testcase_file_path in testcase_file_paths:
     shell.remove_file(testcase_file_path)
+  logs.log("we deleted stuff")
 
   # Explicit cleanup for large vars.
   del testcase_file_paths

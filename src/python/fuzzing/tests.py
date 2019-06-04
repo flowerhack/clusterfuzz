@@ -33,6 +33,7 @@ from metrics import logs
 from platforms import android
 from system import archive
 from system import environment
+import tempfile
 from system import process_handler
 from system import shell
 
@@ -390,6 +391,9 @@ def upload_testcase(testcase_path):
   if not fuzz_logs_bucket:
     return
 
+  if environment.platform() == 'FUCHSIA':
+    testcase_path = tempfile.TemporaryFile()
+
   with open(testcase_path) as file_handle:
     testcase_contents = file_handle.read()
 
@@ -448,8 +452,12 @@ def run_testcase_and_return_result_in_queue(crash_queue,
 
     # Analyze the crash.
     crash_output = _get_crash_output(output)
+    logs.log("Our crash output is: " + str(crash_output))
+    logs.log("Our normie output is " + str(output))
     crash_result = CrashResult(return_code, crash_time, crash_output)
+    logs.log("For the record, crash_result.is_crash() is " + str(crash_result.is_crash()))
     if crash_result.is_crash():
+      logs.log("According to is_crash we hit a real crash")
       # Initialize resource list with the testcase path.
       resource_list = [file_path]
       resource_list += get_resource_paths(crash_output)
@@ -460,6 +468,8 @@ def run_testcase_and_return_result_in_queue(crash_queue,
       stack_file_path = os.path.join(crash_stacks_directory,
                                      utils.string_hash(file_path))
       utils.write_data_to_file(crash_output, stack_file_path)
+
+      logs.log("PIkachu it in a queue")
 
       # Put crash/no-crash results in the crash queue.
       crash_queue.put(
@@ -474,11 +484,16 @@ def run_testcase_and_return_result_in_queue(crash_queue,
       # Don't upload uninteresting testcases (no crash) or if there is no log to
       # correlate it with (not upload_output).
       if upload_output:
+        logs.log("Pikachu upload output")
         upload_testcase(file_path)
+    else:
+      logs.log("Apparently is_crash was false?")
 
     if upload_output:
+      logs.log("Pikachu upload output again?")
       # Include full output for uploaded logs (crash output, merge output, etc).
       crash_result_full = CrashResult(return_code, crash_time, output)
+      logs.log("Pikachu stuff stuff")
       upload_testcase_output(crash_result_full, file_path)
   except Exception:
     logs.log_error('Exception occurred while running '

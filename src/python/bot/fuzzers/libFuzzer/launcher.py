@@ -825,7 +825,7 @@ def main(argv):
     return
 
   # If we don't have a corpus, then that means this is not a fuzzing run.
-  if not corpus_directory:
+  if not corpus_directory and environment.platform() != 'FUCHSIA':
     load_testcase_if_exists(runner, testcase_file_path, fuzzer_name,
                             use_minijail, arguments)
     return
@@ -860,9 +860,12 @@ def main(argv):
   new_testcases_directory = create_corpus_directory('new')
 
   # Get list of corpus directories.
-  corpus_directories = get_corpus_directories(
-      corpus_directory, new_testcases_directory, fuzzer_path,
-      fuzzing_strategies, minijail_chroot)
+  if environment.platform() != 'FUCHSIA':
+    corpus_directories = get_corpus_directories(
+        corpus_directory, new_testcases_directory, fuzzer_path,
+        fuzzing_strategies, minijail_chroot)
+  else:
+    corpus_directories = []
 
   # Bind corpus directories in minijail.
   if use_minijail:
@@ -906,6 +909,8 @@ def main(argv):
   if do_mutator_plugin():
     if use_mutator_plugin(target_name, extra_env, minijail_chroot):
       fuzzing_strategies.append(strategy.MUTATOR_PLUGIN_STRATEGY)
+
+  logs.log("We hit the fuzzer!")
 
   # Execute the fuzzer binary with original arguments.
   fuzz_result = runner.fuzz(
@@ -1035,8 +1040,9 @@ def main(argv):
 
   # Get corpus size after merge. This removes the duplicate units that were
   # created during this fuzzing session.
-  stat_overrides['corpus_size'] = shell.get_directory_file_count(
-      corpus_directory)
+  if environment.platform() != 'FUCHSIA':
+    stat_overrides['corpus_size'] = shell.get_directory_file_count(
+        corpus_directory)
 
   # Delete all corpus directories except for the main one. These were temporary
   # directories to store new testcase mutations and have already been merged to
@@ -1086,6 +1092,8 @@ def main(argv):
         'New units added to corpus: %d.' % new_units_added, stats=parsed_stats)
   else:
     logs.log('No new units found.', stats=parsed_stats)
+
+  logs.log("WE MADE IT THE WHOLE WAY")
 
 
 if __name__ == '__main__':
