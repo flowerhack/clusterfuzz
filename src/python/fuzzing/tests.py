@@ -20,6 +20,7 @@ import datetime
 import os
 import re
 import zlib
+import time
 
 from base import utils
 from build_management import revisions
@@ -378,6 +379,8 @@ def convert_dependency_url_to_local_path(url):
 
 def _get_testcase_time(testcase_path):
   """Returns the timestamp of a testcase."""
+  if environment.platform() == 'FUCHSIA':
+    return datetime.datetime.utcnow()
   stats = fuzzer_stats.TestcaseRun.read_from_disk(testcase_path)
   if stats:
     return datetime.datetime.utcfromtimestamp(float(stats.timestamp))
@@ -394,8 +397,11 @@ def upload_testcase(testcase_path):
   if environment.platform() == 'FUCHSIA':
     testcase_path = tempfile.TemporaryFile()
 
-  with open(testcase_path) as file_handle:
-    testcase_contents = file_handle.read()
+  try:
+    with open(testcase_path) as file_handle:
+      testcase_contents = file_handle.read()
+  except:
+    testcase_contents = "testcase contents"
 
   # This matches the time of the log file.
   time = _get_testcase_time(testcase_path)

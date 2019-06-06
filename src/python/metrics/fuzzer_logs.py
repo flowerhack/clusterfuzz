@@ -89,6 +89,8 @@ def upload_to_logs(bucket_name,
   Returns:
     The path of the uploaded file and whether the uploaded succeeded.
   """
+  if environment.platform() == 'FUCHSIA':
+    return
   if not fuzzer_name:
     fuzzer_name = environment.get_value('FUZZER_NAME')
 

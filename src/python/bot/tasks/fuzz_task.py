@@ -1529,6 +1529,7 @@ def execute_task(fuzzer_name, job_type):
 
   # Transform tests.Crash into fuzz_task.Crash.
   # And filter the crashes (e.g. removing errorneous crashes).
+  logs.log("Before turning tests.Crash into fuzz_task.Crash we have " + str(len(crashes)) + " crashes.")
   crashes = [Crash(crash) for crash in crashes]
 
   logs.log("We have " + str(len(crashes)) + " crashes to pass to process_crashess")

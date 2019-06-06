@@ -40,9 +40,12 @@ class CrashResult(object):
     return self.crash_time
 
   def get_symbolized_data(self):
+    # returns a StackAnalyzerState i guess?
     """Compute symbolized crash data if necessary or return cached result."""
     if environment.platform() == 'FUCHSIA':
-      return self.output
+      state = StackAnalyzerState()
+      state.crash_state = self.output
+      return state
     if self._symbolized_crash_data:
       return self._symbolized_crash_data
 
@@ -63,6 +66,8 @@ class CrashResult(object):
 
   def get_state(self, symbolized=True):
     """Return the crash state."""
+    if environment.platform() == 'FUCHSIA':
+      return self.output
     if symbolized:
       state = self.get_symbolized_data()
     else:
@@ -72,6 +77,8 @@ class CrashResult(object):
 
   def get_stacktrace(self, symbolized=True):
     """Return the crash stacktrace."""
+    if environment.platform() == 'FUCHSIA':
+      return self.output
     if symbolized:
       state = self.get_symbolized_data()
     else:
