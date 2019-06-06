@@ -1285,6 +1285,8 @@ def execute_task(fuzzer_name, job_type):
   # If yes, bail out.
   logs.log('Checking for bad build.')
   crash_revision = environment.get_value('APP_REVISION')
+  if not crash_revision:
+    crash_revision = 0
   is_bad_build = tests.check_for_bad_build(job_type, crash_revision)
   _track_build_run_result(job_type, crash_revision, is_bad_build)
   if is_bad_build:
@@ -1343,7 +1345,7 @@ def execute_task(fuzzer_name, job_type):
                                    data_directory, testcase_count)
   if platform == 'FUCHSIA':
     error_occurred = False
-    testcase_file_paths = ['','','','','']
+    testcase_file_paths = [fuzzer_name,fuzzer_name,fuzzer_name,fuzzer_name,fuzzer_name]
     generated_testcase_count = 5
     sync_corpus_directory = False
     fuzzer_metadata = {}
@@ -1424,8 +1426,8 @@ def execute_task(fuzzer_name, job_type):
 
     while thread_index < max_threads and test_number < len(testcase_file_paths):
       if platform == 'FUCHSIA':
-        tempdir = tempfile.mkdtemp()
-        testcase_file_path = os.path.join(tempdir, 'testcase')
+        #tempdir = tempfile.mkdtemp()
+        #testcase_file_path = os.path.join(tempdir, 'testcase')
         gestures = ''
       else:
         testcase_file_path = testcase_file_paths[test_number]

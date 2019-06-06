@@ -41,6 +41,8 @@ class CrashResult(object):
 
   def get_symbolized_data(self):
     """Compute symbolized crash data if necessary or return cached result."""
+    if environment.platform() == 'FUCHSIA':
+      return self.output
     if self._symbolized_crash_data:
       return self._symbolized_crash_data
 
@@ -50,6 +52,8 @@ class CrashResult(object):
 
   def get_unsymbolized_data(self):
     """Compute unsymbolized crash data if necessary or return cached result."""
+    if environment.platform() == 'FUCHSIA':
+      return self.output
     if self._unsymbolized_crash_data:
       return self._unsymbolized_crash_data
 

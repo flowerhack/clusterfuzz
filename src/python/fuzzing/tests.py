@@ -442,6 +442,8 @@ def run_testcase_and_return_result_in_queue(crash_queue,
     logs.log("this is running a testcase")
     return_code, crash_time, output = run_testcase(thread_index, file_path,
                                                    gestures, env_copy)
+    if crash_time is None:
+      crash_time = 0
     logs.log("RETURN CODE IS: " + str(return_code))
     logs.log("OUTPUT IS " + str(output))
 
