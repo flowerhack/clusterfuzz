@@ -412,6 +412,8 @@ def upload_testcase(testcase_path):
       time=time,
       file_extension='.testcase')
 
+  logs.log("We uploaded testcase")
+
 
 def _get_crash_output(output):
   """Returns crash part of the output, excluding unrelated content (e.g. output
@@ -503,6 +505,7 @@ def run_testcase_and_return_result_in_queue(crash_queue,
       crash_result_full = CrashResult(return_code, crash_time, output)
       logs.log("Pikachu stuff stuff")
       upload_testcase_output(crash_result_full, file_path)
+      logs.log("Uploaded testcase output!")
   except Exception:
     logs.log_error('Exception occurred while running '
                    'run_testcase_and_return_result_in_queue.')

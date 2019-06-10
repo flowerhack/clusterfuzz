@@ -43,7 +43,7 @@ class CrashResult(object):
     # returns a StackAnalyzerState i guess?
     """Compute symbolized crash data if necessary or return cached result."""
     if environment.platform() == 'FUCHSIA':
-      state = StackAnalyzerState()
+      state = stack_analyzer.StackAnalyzerState()
       state.crash_state = self.output
       return state
     if self._symbolized_crash_data:
@@ -118,6 +118,8 @@ class CrashResult(object):
 
   def is_security_issue(self):
     """Return True if this crash is a security issue."""
+    if environment.platform() == 'FUCHSIA':
+      return True
     state = self.get_unsymbolized_data()
     return crash_analyzer.is_security_issue(
         state.crash_stacktrace, state.crash_type, state.crash_address)
