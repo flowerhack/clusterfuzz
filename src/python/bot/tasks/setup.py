@@ -36,7 +36,7 @@ from google_cloud_utils import storage
 from metrics import fuzzer_logs
 from metrics import logs
 from platforms import android
-from platforms import fuchsia
+#from platforms import fuchsia
 from system import archive
 from system import environment
 from system import shell
@@ -157,8 +157,8 @@ def setup_testcase(testcase):
   if environment.platform() == 'ANDROID':
     _copy_testcase_to_device_and_setup_environment(testcase, testcase_file_path)
 
-  if environment.platform() == 'FUCHSIA':
-    fuchsia.device.copy_testcase_to_device(testcase_file_path)
+  #if environment.platform() == 'FUCHSIA':
+  #  fuchsia.device.copy_testcase_to_device(testcase_file_path)
 
   # Push testcases to worker.
   if environment.is_trusted_host():
