@@ -126,6 +126,7 @@ class Device(object):
       logfile: An optional pathname to save a copy of the command output to. The
         output will also still be sent to stdout.
     """
+    logfile = 'sample_log_file.txt'
     if quiet:
       if logfile:
         with open(logfile, 'w') as f:

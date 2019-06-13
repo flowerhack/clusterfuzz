@@ -156,7 +156,7 @@ class Fuzzer(object):
 
   def run(self, fuzzer_args, logfile=None):
     fuzz_cmd = ['run', self.url(), '-artifact_prefix=data'] + fuzzer_args
-    logs.log("FUZZ COMMAND IS " + str(fuzz_cmd))
+    #logs.log("FUZZ COMMAND IS " + str(fuzz_cmd))
     self.last_fuzz_cmd = self.device.get_ssh_cmd(['ssh', 'localhost'] +
                                                  fuzz_cmd)
     self.device.ssh(fuzz_cmd, quiet=False, logfile=logfile)
@@ -177,6 +177,11 @@ class Fuzzer(object):
       Args:
         fuzzer_args: Command line arguments to pass to libFuzzer
     """
+    from metrics import logs as glob_logs
+    glob_logs.log("WHAT THE ACTUAL HECK")
+    with open('fuchsia_util_fuzzer.txt', 'a') as this_log:
+      this_log.write("hello")
+    #raise Exception("lawl")
     self.require_stopped()
     results = os.path.join(self._output, datetime.datetime.utcnow().isoformat())
     try:

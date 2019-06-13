@@ -825,6 +825,7 @@ def main(argv):
     return
 
   # If we don't have a corpus, then that means this is not a fuzzing run.
+  # TODO(flowerhack): Update this to actually handle corpus management.
   if not corpus_directory and environment.platform() != 'FUCHSIA':
     load_testcase_if_exists(runner, testcase_file_path, fuzzer_name,
                             use_minijail, arguments)
@@ -860,6 +861,7 @@ def main(argv):
   new_testcases_directory = create_corpus_directory('new')
 
   # Get list of corpus directories.
+  # TODO(flowerhack): Update this to actually handle corpus management.
   if environment.platform() != 'FUCHSIA':
     corpus_directories = get_corpus_directories(
         corpus_directory, new_testcases_directory, fuzzer_path,

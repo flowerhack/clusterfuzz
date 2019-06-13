@@ -45,21 +45,31 @@ class Log(object):
       the device for each libFuzzer worker, and download any test unit artifacts
       they reference.
     """
-    self.host.killall('loglistener')
-    with open(self.fuzzer.results('zircon.log'), 'r') as log_in:
-      with open(self.fuzzer.results('symbolized.log'), 'w') as log_out:
-        self.host.symbolize(log_in, log_out)
-    try:
-      self.device.fetch(
-          self.fuzzer.data_path('fuzz-*.log'), self.fuzzer.results())
-    except subprocess.CalledProcessError:
-      pass
-    units = []
-    pattern = re.compile(r'Test unit written to (\S*)$')
-    for log in os.listdir(self.fuzzer.results()):
-      if log.startswith('fuzz-') and log.endswith('.log'):
-        with open(self.fuzzer.results(log), 'r') as f:
-          matches = [pattern.match(line) for line in f.readlines()]
-          units.extend([m.group(1) for m in matches if m])
-    for unit in units:
-      self.device.fetch(unit, self.fuzzer.results())
+    from metrics import logs as glob_logs
+    glob_logs.log("WHAT THE ACTUAL HECK")
+    print("IS THIS THING ON???")
+    with open('fuchsia_util_log.txt', 'a') as fuchsia_util_log:
+      fuchsia_util_log.write("is this thing on")
+      self.host.killall('loglistener')
+      with open(self.fuzzer.results('zircon.log'), 'r') as log_in:
+        fuchsia_util_log.write("zircon.log is " + str(log_in))
+        with open(self.fuzzer.results('symbolized.log'), 'w') as log_out:
+          fuchsia_util_log.write("zircon.log is " + str(log_out))
+          self.host.symbolize(log_in, log_out)
+      try:
+        self.device.fetch(
+            self.fuzzer.data_path('fuzz-*.log'), self.fuzzer.results())
+        fuchsia_util_log.write(self.fuzzer.results())
+      except subprocess.CalledProcessError:
+        pass
+      units = []
+      pattern = re.compile(r'Test unit written to (\S*)$')
+      fuchsia_util_log.write("iterating logs?")
+      for log in os.listdir(self.fuzzer.results()):
+        if log.startswith('fuzz-') and log.endswith('.log'):
+          fuchsia_util_log.write("found a relevant fuzzer")
+          with open(self.fuzzer.results(log), 'r') as f:
+            matches = [pattern.match(line) for line in f.readlines()]
+            units.extend([m.group(1) for m in matches if m])
+      for unit in units:
+        self.device.fetch(unit, self.fuzzer.results())

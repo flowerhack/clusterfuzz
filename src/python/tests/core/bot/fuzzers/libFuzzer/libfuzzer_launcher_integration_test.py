@@ -778,6 +778,8 @@ class TestLauncherFuchsia(BaseLauncherTest):
     # TODO(flowerhack): Fuchsia's `fuzz` only calls 'echo running on fuchsia!'
     # right now by default, but we'll call it explicitly in here as we
     # diversity `fuzz`'s functionality
+    with open('testing_the_madness.txt', 'a') as this_log:
+      this_log.write("hello")
     build_manager.setup_fuchsia_build()
     environment.set_value('FUZZ_TARGET', 'example_fuzzers/toy_fuzzer')
     qemu_process = fuchsia.device.qemu_setup()
