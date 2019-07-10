@@ -144,37 +144,21 @@ def initialize_resources_dir():
       fuchsia_resources_dir, create_intermediates=True, recreate=True)
 
   # Bucket for QEMU resources.
-  fuchsia_resources_url = environment.get_value('FUCHSIA_RESOURCES_URL')
+  fuchsia_resources_url = environment.get_value('FUCHSIA_BUILD_URL')
   if not fuchsia_resources_url:
     raise errors.FuchsiaConfigError(
         'Could not find path for remote'
-        'Fuchsia resources bucket (FUCHSIA_RESOURCES_URL')
+        'Fuchsia resources bucket (FUCHSIA_BUILD_URL')
 
   gsutil_command_arguments = [
       '-m', 'cp', '-r', fuchsia_resources_url, fuchsia_resources_dir
   ]
-  logs.log("Beginning Fuchsia SDK download.")
-  result = gsutil.GSUtilRunner().run_gsutil(gsutil_command_arguments)
-  if result.return_code or result.timed_out:
-    raise errors.FuchsiaSdkError('Failed to download Fuchsia '
-                                 'resources: ' + result.output)
-  logs.log("Fuchsia SDK download complete.")
-
-  # Bucket for build resources. Necessary for fuzzer selection.
   logs.log("Fetching Fuchsia build.")
-  fuchsia_build_url = environment.get_value('FUCHSIA_BUILD_URL')
-  if not fuchsia_build_url:
-    raise errors.FuchsiaConfigError('Could not find path for remote'
-                                    'Fuchsia build bucket (FUCHSIA BUILD URL')
-
-  gsutil_command_arguments = [
-      '-m', 'cp', '-r', fuchsia_build_url, fuchsia_resources_dir
-  ]
-  logs.log("Beginning Fuchsia build download.")
   result = gsutil.GSUtilRunner().run_gsutil(gsutil_command_arguments)
   if result.return_code or result.timed_out:
     raise errors.FuchsiaSdkError('Failed to download Fuchsia '
                                  'resources: ' + result.output)
+  logs.log("Fuchsia build download complete..")
 
   return fuchsia_resources_dir
 

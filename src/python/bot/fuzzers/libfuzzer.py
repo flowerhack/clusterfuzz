@@ -374,6 +374,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     self.fuzzer.run([])
     # TODO(flowerhack): Modify fuzzer.run() to return a ProcessResult, rather
     # than artisinally handcrafting one here.
+    #self.device.store(os.path.join(some_label, '*'), self.fuzzer.data_path('?'))  # TODO add here: that's how we pull proper logs down
     fuzzer_process_result = new_process.ProcessResult()
     fuzzer_process_result.return_code = 0
     fuzzer_process_result.output = ''
