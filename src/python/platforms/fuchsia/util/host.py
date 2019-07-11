@@ -18,6 +18,7 @@ from builtins import str
 import json
 import os
 import subprocess
+import time
 
 
 class Host(object):
@@ -95,7 +96,15 @@ class Host(object):
 
   def set_symbolizer(self, executable, symbolizer):
     """Sets the paths to both the wrapper and LLVM symbolizers."""
-    if not os.path.exists(executable) or not os.access(executable, os.X_OK):
+    if not os.path.exists(executable):
+      with open("/usr/local/google/home/flowerhack/welcome.txt", "a") as file:
+        file.write("go time! " + str(Host.join('foo')))
+      #time.sleep(900)
+      raise Host.ConfigError("binary doesn't exist")
+    if not os.access(executable, os.X_OK):
+      with open("/usr/local/google/home/flowerhack/welcome.txt", "a") as file:
+        file.write("go time! " + str(executable))
+      #time.sleep(900)
       raise Host.ConfigError('Invalid symbolize binary: ' + executable)
     if not os.path.exists(symbolizer) or not os.access(symbolizer, os.X_OK):
       raise Host.ConfigError('Invalid LLVM symbolizer: ' + symbolizer)
@@ -121,7 +130,7 @@ class Host(object):
     platform = 'mac-x64' if os.uname()[0] == 'Darwin' else 'linux-x64'
     self.set_platform(platform)
     self.set_symbolizer(
-        Host.join('zircon', 'prebuilt', 'downloads', 'symbolize'),  # change
+        Host.join('zircon', 'prebuilt', 'downloads', 'symbolize', 'linux-x64', 'symbolize'),  # change
         Host.join('buildtools', platform, 'clang', 'bin', 'llvm-symbolizer'))
     json_file = Host.join(build_dir, 'fuzzers.json')
     # fuzzers.json isn't emitted in release builds

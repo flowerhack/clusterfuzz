@@ -112,6 +112,8 @@ class Device(object):
 
     Raises: Same as subprocess.Popen
     """
+    with open("/usr/local/google/home/flowerhack/how-to-ssh.txt", "a") as file:
+      file.write(str(self.get_ssh_cmd(['ssh', self._addr] + cmdline)))
     return subprocess.Popen(
         self.get_ssh_cmd(['ssh', self._addr] + cmdline),
         stdout=stdout,
@@ -135,7 +137,7 @@ class Device(object):
         with open(logfile, 'w') as f:
           self._ssh(cmdline, stdout=f).wait()
       else:
-        self._ssh(cmdline, stdout=Host.DEVNULL).wait()
+        self._ssh(cmdline).wait()
     else:
       if logfile:
         proc = self._ssh(cmdline, stdout=subprocess.PIPE)

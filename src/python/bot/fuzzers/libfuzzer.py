@@ -18,6 +18,7 @@ from builtins import object
 import copy
 import os
 import shutil
+import time
 
 from base import retry
 from bot.fuzzers import engine_common
@@ -351,7 +352,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     # Fuchsia fuzzer names have the format {package_name}/{binary_name}.
     # TODO(ochang): Properly handle fuzzers with '/' in the binary name.
     package, target = environment.get_value('FUZZ_TARGET').split('/')
-    self.fuzzer = Fuzzer(self.device, package, target)
+    self.fuzzer = Fuzzer(self.device, package, target, foreground=True)
     self.device.set_ssh_option('StrictHostKeyChecking no')
     self.device.set_ssh_option('UserKnownHostsFile=/dev/null')
     self.device.set_ssh_identity(fuchsia_pkey_path)
@@ -371,7 +372,10 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            extra_env=None):
     """LibFuzzerCommon.fuzz override."""
     self._test_qemu_ssh()
-    self.fuzzer.run([])
+    self.fuzzer.start([])
+    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+      file.write("doing fuzzer start!")
+    #sleep(900)
     # TODO(flowerhack): Modify fuzzer.run() to return a ProcessResult, rather
     # than artisinally handcrafting one here.
     #self.device.store(os.path.join(some_label, '*'), self.fuzzer.data_path('?'))  # TODO add here: that's how we pull proper logs down

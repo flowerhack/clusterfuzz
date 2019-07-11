@@ -75,6 +75,11 @@ def qemu_setup():
                              'fuchsia.zbi')
   initrd_path = os.path.join(fuchsia_resources_dir, 'fuchsia-ssh.zbi')
 
+  loglistener_path = os.path.join(fuchsia_resources_dir, 'build', 'out', 'default.zircon', 'tools', 'loglistener')
+  os.chmod(loglistener_path, 0o111)
+
+
+
   # Perform some more initiailization steps.
   extend_fvm(fuchsia_resources_dir, drive_path)
   add_keys_to_zbi(fuchsia_resources_dir, initrd_path, fuchsia_zbi)
@@ -158,7 +163,16 @@ def initialize_resources_dir():
   if result.return_code or result.timed_out:
     raise errors.FuchsiaSdkError('Failed to download Fuchsia '
                                  'resources: ' + result.output)
-  logs.log("Fuchsia build download complete..")
+
+
+  symbolizer_path = os.path.join(fuchsia_resources_dir, 'build', 'zircon', 'prebuilt', 'downloads', 'symbolize', 'linux-x64', 'symbolize')
+  llvm_symbolizer_path = os.path.join(fuchsia_resources_dir, 'build', 'buildtools', 'linux-x64', 'clang', 'bin', 'llvm-symbolizer')
+  with open("/usr/local/google/home/flowerhack/welcome2.txt", "a") as file:
+    file.write("i chmodded " + str(llvm_symbolizer_path))
+  os.chmod(symbolizer_path, 0o111)
+  os.chmod(llvm_symbolizer_path, 0o111)
+
+  logs.log("Fuchsia build download complete.")
 
   return fuchsia_resources_dir
 

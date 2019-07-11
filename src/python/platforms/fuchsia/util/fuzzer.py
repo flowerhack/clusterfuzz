@@ -204,7 +204,7 @@ class Fuzzer(object):
       if self._foreground:
         self.run(fuzzer_args, logfile=self.results('fuzz-0.log'))
       else:
-        self.run(fuzzer_args)
+        self.run(fuzzer_args, logfile=self.results('fuzz-0.log'))
       while self.is_running():
         time.sleep(2)
 
