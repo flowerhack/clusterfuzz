@@ -988,6 +988,25 @@ def llvm_test_one_input_override(frame, frame_struct):
   return frame
 
 
+def get_fuchsia_symbolized():
+    fuchsia_resources_dir = environment.get_value('FUCHSIA_RESOURCES_DIR')
+    # TODO: obviously need to generalize this, so it's not just restricted to one fuzzer :P
+    # TODO is there a test of some sort for this?
+    with open("/usr/local/google/home/flowerhack/aw-yiss-symbolization.txt", "a") as file:
+      file.write("we're checking out symbolization\n")
+    symbolized_path = os.path.join(fuchsia_resources_dir, 'build', 'test_data', 'fuzzing', 'example_fuzzers', 'toy_fuzzer', 'latest', 'symbolized.log')
+    with open(symbolized_path, 'r') as file:
+        data = file.read()
+    with open("/usr/local/google/home/flowerhack/aw-yiss-symbolization.txt", "a") as file:
+      file.write(data)
+    return data
+
+
+    # fuchsia/build/test_data/fuzzing/example_fuzzers/toy_fuzzer/latest/symbolized.log
+    # loglistener_path = os.path.join(fuchsia_resources_dir, 'build', 'out', 'default.zircon', 'tools', 'loglistener')
+
+
+
 def get_crash_data(crash_data, symbolize_flag=True):
   """Get crash parameters from crash data.
   Crash parameters include crash type, address, state and stacktrace.
@@ -996,6 +1015,11 @@ def get_crash_data(crash_data, symbolize_flag=True):
   inline frames, but we do exclude them for purposes of crash state generation
   (helps in testcase deduplication)."""
   # Decide whether to symbolize or not symbolize the input stacktrace.
+  #if environment.platform() == 'FUCHSIA':
+  #  crash_stacktrace_with_inlines = get_fuchsia_symbolized()
+  #  crash_stacktrace_without_inlines = get_fuchsia_symbolized()
+    #  return True
+  #elif symbolize_flag:
   if symbolize_flag:
     # Defer imports since stack_symbolizer pulls in a lot of things.
     from crash_analysis.stack_parsing import stack_symbolizer

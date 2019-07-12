@@ -56,8 +56,14 @@ class CrashResult(object):
         self.output, symbolize_flag=False)
     return self._unsymbolized_crash_data
 
+  def read_fuchsia_symbolized():
+    pass
+
   def get_state(self, symbolized=True):
     """Return the crash state."""
+    #if environment.platform() == 'FUCHSIA':
+    #  state = self.read_fuchsia_symbolized()
+    #  return True
     if symbolized:
       state = self.get_symbolized_data()
     else:
@@ -85,12 +91,20 @@ class CrashResult(object):
     crashed = crash_analyzer.is_crash(self.return_code, self.output)
     if not crashed:
       return False
+    with open("/usr/local/google/home/flowerhack/aw-yiss-results.txt", "a") as file:
+      file.write("we have a crash so far\n")
 
     state = self.get_state(symbolized=False)
-    if environment.platform() == 'FUCHSIA':
-      return True
+    #if environment.platform() == 'FUCHSIA':
+    #  return True
+    with open("/usr/local/google/home/flowerhack/aw-yiss-results.txt", "a") as file:
+      file.write("We have a state\n")
     if not state.strip() and not ignore_state:
+      with open("/usr/local/google/home/flowerhack/aw-yiss-results.txt", "a") as file:
+        file.write("oh no how did we fail D:\n")
       return False
+    with open("/usr/local/google/home/flowerhack/aw-yiss-results.txt", "a") as file:
+      file.write("oh no how did we fail D:!!!\n")
     return True
 
   def should_ignore(self):

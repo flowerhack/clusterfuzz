@@ -372,9 +372,14 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            extra_env=None):
     """LibFuzzerCommon.fuzz override."""
     self._test_qemu_ssh()
+    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+      file.write("time to start a fuzzer...\n")
+      file.write("results will be in " + str(self.fuzzer.results()) + "\n")
     self.fuzzer.start([])
     with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-      file.write("doing fuzzer start!")
+      file.write("did fuzzer start!\n")
+      file.write("results in: " + str(self.fuzzer.results()) + "\n")
+    #time.sleep(900)
     #sleep(900)
     # TODO(flowerhack): Modify fuzzer.run() to return a ProcessResult, rather
     # than artisinally handcrafting one here.
@@ -382,8 +387,14 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     fuzzer_process_result = new_process.ProcessResult()
     fuzzer_process_result.return_code = 0
     fuzzer_process_result.output = ''
+    fuchsia_resources_dir = environment.get_value('FUCHSIA_RESOURCES_DIR')
+    symbolized_path = os.path.join(fuchsia_resources_dir, 'build', 'test_data', 'fuzzing', 'example_fuzzers', 'toy_fuzzer', 'latest', 'zircon.log')
+    with open(symbolized_path, 'r') as file:
+        fuzzer_process_output = file.read()
     fuzzer_process_result.time_executed = 0
     fuzzer_process_result.command = self.fuzzer.last_fuzz_cmd
+    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+      file.write("returning from fuzz\n")
     return fuzzer_process_result
 
   def run_single_testcase(self,
