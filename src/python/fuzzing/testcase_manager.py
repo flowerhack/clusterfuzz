@@ -445,6 +445,9 @@ def run_testcase_and_return_result_in_queue(crash_queue,
 
     # Analyze the crash.
     crash_output = _get_crash_output(output)
+    print("HEY OOH THE OUTPUT IS " + str(output))
+    logs.log_info("HEY OOH THE OUTPUT IS " + str(output))
+
     crash_result = CrashResult(return_code, crash_time, crash_output)
     if crash_result.is_crash():
       # Initialize resource list with the testcase path.
