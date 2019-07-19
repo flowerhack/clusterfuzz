@@ -87,6 +87,8 @@ class CrashResult(object):
     return state.crash_type
 
   def is_crash(self, ignore_state=False):
+    with open("/usr/local/google/home/flowerhack/wtf333.txt", "a") as file:
+      file.write("is this thing on\n")
     """Return True if this result was a crash."""
     crashed = crash_analyzer.is_crash(self.return_code, self.output)
     if not crashed:
@@ -98,13 +100,17 @@ class CrashResult(object):
     #if environment.platform() == 'FUCHSIA':
     #  return True
     with open("/usr/local/google/home/flowerhack/aw-yiss-results.txt", "a") as file:
-      file.write("We have a state\n")
+      file.write("We have a state all right: " + str(state) + "\n")
     if not state.strip() and not ignore_state:
       with open("/usr/local/google/home/flowerhack/aw-yiss-results.txt", "a") as file:
+        file.write("plzbeexplainin\n")
         file.write("oh no how did we fail D:\n")
+        #file.write("foo" + str(state.__dict__) + "bar\n")
+        #file.write(str(state))
+        #file.write("\nandthat'sallwegot\n")
       return False
     with open("/usr/local/google/home/flowerhack/aw-yiss-results.txt", "a") as file:
-      file.write("oh no how did we fail D:!!!\n")
+      file.write("a different kind of fail!!! D:!!!\n")
     return True
 
   def should_ignore(self):

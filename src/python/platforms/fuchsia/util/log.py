@@ -52,9 +52,9 @@ class Log(object):
     with open(self.fuzzer.results('zircon.log'), 'r') as log_in:
       with open("/usr/local/google/home/flowerhack/zircon.txt", "a") as file:
         file.write("check my logs at " + self.fuzzer.results('symbolized.log') + "\n")
-    with open(self.fuzzer.results('zircon.log'), 'r') as log_in:
-      with open(self.fuzzer.results('symbolized.log'), 'w') as log_out:
-        self.host.symbolize(log_in, log_out)
+    #with open(self.fuzzer.results('zircon.log'), 'r') as log_in:
+    #  with open(self.fuzzer.results('symbolized.log'), 'w') as log_out:
+    #    self.host.symbolize(log_in, log_out)
     try:
       self.device.fetch(
           self.fuzzer.data_path('fuzz-*.log'), self.fuzzer.results())
@@ -73,4 +73,4 @@ class Log(object):
           units.extend([m.group(1) for m in matches if m])
     for unit in units:
       self.device.fetch(unit, self.fuzzer.results())
-    time.sleep(900)
+    #time.sleep(900)

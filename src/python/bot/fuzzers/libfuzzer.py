@@ -375,6 +375,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
       file.write("time to start a fuzzer...\n")
       file.write("results will be in " + str(self.fuzzer.results()) + "\n")
+    # We don't return from this function before the crash_result stuff happens.
+    # So: symbolization has to happen elsewher.e
     self.fuzzer.start([])
     with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
       file.write("did fuzzer start!\n")
@@ -388,9 +390,12 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     fuzzer_process_result.return_code = 0
     fuzzer_process_result.output = ''
     fuchsia_resources_dir = environment.get_value('FUCHSIA_RESOURCES_DIR')
-    symbolized_path = os.path.join(fuchsia_resources_dir, 'build', 'test_data', 'fuzzing', 'example_fuzzers', 'toy_fuzzer', 'latest', 'zircon.log')
-    with open(symbolized_path, 'r') as file:
-        fuzzer_process_output = file.read()
+    unsymbolized_path = os.path.join(fuchsia_resources_dir, 'build', 'test_data', 'fuzzing', 'example_fuzzers', 'toy_fuzzer', 'latest', 'zircon.log')
+    with open(unsymbolized_path, 'r') as file:
+      fuzzer_process_output = file.read()
+    symbolized_path = os.path.join(fuchsia_resources_dir, 'build', 'test_data', 'fuzzing', 'example_fuzzers', 'toy_fuzzer', 'latest', 'symbolized.log')
+    #self.host.symbolize(unsymbolized_path, symbolized_path)
+
     fuzzer_process_result.time_executed = 0
     fuzzer_process_result.command = self.fuzzer.last_fuzz_cmd
     with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
