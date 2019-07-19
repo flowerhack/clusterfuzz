@@ -346,16 +346,18 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
       raise fuchsia.errors.FuchsiaConfigError(
           ('FUCHSIA_PKEY_PATH, FUCHSIA_PORTNUM, or FUCHSIA_RESOURCES_DIR was '
            'not set'))
-    self.host = Host.from_dir(
-        os.path.join(fuchsia_resources_dir, self.FUCHSIA_BUILD_REL_PATH))
+    fuchsia_resources_dir_plus_build = os.path.join(fuchsia_resources_dir, self.FUCHSIA_BUILD_REL_PATH)
+    self.host = Host.from_dir(fuchsia_resources_dir_plus_build)
     self.device = Device(self.host, 'localhost', fuchsia_portnum)
-    # Fuchsia fuzzer names have the format {package_name}/{binary_name}.
-    # TODO(ochang): Properly handle fuzzers with '/' in the binary name.
-    package, target = environment.get_value('FUZZ_TARGET').split('/')
-    self.fuzzer = Fuzzer(self.device, package, target, foreground=True)
     self.device.set_ssh_option('StrictHostKeyChecking no')
     self.device.set_ssh_option('UserKnownHostsFile=/dev/null')
     self.device.set_ssh_identity(fuchsia_pkey_path)
+    # Fuchsia fuzzer names have the format {package_name}/{binary_name}.
+    # TODO(ochang): Properly handle fuzzers with '/' in the binary name.
+    package, target = environment.get_value('FUZZ_TARGET').split('/')
+    test_data_dir = os.path.join(fuchsia_resources_dir_plus_build, "test_data", "fuzzing", package, target)
+    self.fuzzer = Fuzzer(self.device, package, target, output=test_data_dir, foreground=True)
+
     super(FuchsiaQemuLibFuzzerRunner, self).__init__(
         executable_path=executable_path, default_args=default_args)
 
@@ -381,7 +383,21 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
       file.write("did fuzzer start!\n")
       file.write("results in: " + str(self.fuzzer.results()) + "\n")
-    #time.sleep(900)
+    self.device.fetch(self.fuzzer.data_path('fuzz-*.log'), self.fuzzer.results())
+    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+      file.write("performed a fetch\n")
+    for log in os.listdir(self.fuzzer.results()):
+      with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+        file.write("about to dlog\n")
+      if log.startswith('fuzz-') and log.endswith('.log'):
+        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+          file.write("really about to dlog\n")
+        artifacts += self.device.dlog(self.fuzzer.results(log))
+        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+          file.write("just did dlog\n")
+    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+      file.write("check it out now.\n")
+    time.sleep(900)
     #sleep(900)
     # TODO(flowerhack): Modify fuzzer.run() to return a ProcessResult, rather
     # than artisinally handcrafting one here.

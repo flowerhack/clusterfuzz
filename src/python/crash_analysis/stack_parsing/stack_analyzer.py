@@ -1076,7 +1076,7 @@ def get_crash_data(crash_data, symbolize_flag=True):
 
     with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
       file.write("Check for logs in: " + str(environment.get_value('FUCHSIA_RESOURCES_DIR')) + "\n")
-    time.sleep(900)
+    #time.sleep(900)
     pass
 
   # Compose the StackAnalyzerState object.
