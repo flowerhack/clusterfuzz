@@ -879,27 +879,37 @@ def update_task_status(task_name, status, expiry_interval=None):
 def update_heartbeat(force_update=False):
   """Updates heartbeat with current timestamp and log data."""
   # Check if the heartbeat was recently updated. If yes, bail out.
+  logs.log("here we are in the heartbeat")
   last_modified_time = persistent_cache.get_value(
       HEARTBEAT_LAST_UPDATE_KEY, constructor=datetime.datetime.utcfromtimestamp)
   if (not force_update and last_modified_time and not dates.time_has_expired(
       last_modified_time, seconds=data_types.HEARTBEAT_WAIT_INTERVAL)):
     return 0
+  logs.log("further in heartbeat")
 
   bot_name = environment.get_value('BOT_NAME')
   current_time = datetime.datetime.utcnow()
 
   try:
+    logs.log("in the try in the heartbeat")
     heartbeat = ndb.Key(data_types.Heartbeat, bot_name).get()
+    logs.log("we got the key in the heartbeat")
     if not heartbeat:
+      logs.log("there was not heartbeat")
       heartbeat = data_types.Heartbeat()
+      logs.log("we're almost out...")
       heartbeat.bot_name = bot_name
+    logs.log("pokemon")
 
     heartbeat.key = ndb.Key(data_types.Heartbeat, bot_name)
     heartbeat.task_payload = tasks.get_task_payload()
+    logs.log("pikachu")
     heartbeat.task_end_time = tasks.get_task_end_time()
     heartbeat.last_beat_time = current_time
+    logs.log("stuffs")
     heartbeat.source_version = utils.current_source_version()
     heartbeat.put()
+    logs.log("we put th eheartbeat")
 
     persistent_cache.set_value(
         HEARTBEAT_LAST_UPDATE_KEY, time.time(), persist_across_reboots=True)

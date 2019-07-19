@@ -327,18 +327,23 @@ def run():
   # Since this code is particularly sensitive for bot stability, continue
   # execution but store the exception if anything goes wrong during one of these
   # steps.
+  logs.log("here we are in the update task")
   try:
     # Update heartbeat with current time.
+    logs.log("update heartbeat")
     data_handler.update_heartbeat()
 
     # Download new layout tests once per day.
+    logs.log("update tests if needed")
     update_tests_if_needed()
 
     # Remove unused builds once per day.
+    logs.log("remove unused buidls")
     build_manager.remove_unused_builds()
 
     # Check overall free disk space. If we are running too low, clear all
     # data directories like builds, fuzzers, data bundles, etc.
+    logs.log("low on disk space")
     shell.clear_data_directories_on_low_disk_space()
   except Exception:
     logs.log_error('Error occurred while running update task.')
@@ -347,6 +352,7 @@ def run():
   # update the source. If for some reason the source code update fails, it is
   # not necessary to run the init scripts.
   try:
+    logs.log("newer rev?")
     # If there is a newer revision, exit and let run.py update the source code.
     if get_newer_source_revision() is not None:
       if environment.is_trusted_host():
@@ -356,6 +362,7 @@ def run():
       sys.exit(0)
 
     # Run platform specific initialization scripts.
+    logs.log("running platform init scripts")
     run_platform_init_scripts()
   except Exception:
     logs.log_error('Error occurred while running update task.')
