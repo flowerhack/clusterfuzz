@@ -83,6 +83,13 @@ class Device(object):
         """Returns the SSH executable and options."""
         result = cmd[:1]
         for opt, args in self._ssh_opts.iteritems():
+            if result[0] == 'scp' and opt == 'p':
+                with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+                    file.write("modding scp\n")
+                opt = 'P'
+            else:
+                with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+                    file.write("opt is " + str(opt) + " and result[0] is " + str(result[0]) + "\n")
             if len(args) == 0:
                 result.append('-' + opt)
             else:
