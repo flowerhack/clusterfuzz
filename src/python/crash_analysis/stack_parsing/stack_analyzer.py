@@ -1043,7 +1043,7 @@ def get_crash_data(crash_data, symbolize_flag=True):
   if environment.platform() == 'FUCHSIA':
 
     with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-      file.write("okay it's about to be real!")
+      file.write("okay it's about to be real!\n")
 
 #    FUCHSIA_BUILD_REL_PATH = os.path.join('build', 'out', 'default')
 #    fuchsia_pkey_path = environment.get_value('FUCHSIA_PKEY_PATH')

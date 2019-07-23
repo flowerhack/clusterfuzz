@@ -168,7 +168,7 @@ def initialize_resources_dir():
   symbolizer_path = os.path.join(fuchsia_resources_dir, 'build', 'zircon', 'prebuilt', 'downloads', 'symbolize', 'linux-x64', 'symbolize')
   llvm_symbolizer_path = os.path.join(fuchsia_resources_dir, 'build', 'buildtools', 'linux-x64', 'clang', 'bin', 'llvm-symbolizer')
   with open("/usr/local/google/home/flowerhack/welcome2.txt", "a") as file:
-    file.write("i chmodded " + str(llvm_symbolizer_path))
+    file.write("i chmodded " + str(llvm_symbolizer_path) + "\n")
   os.chmod(symbolizer_path, 0o111)
   os.chmod(llvm_symbolizer_path, 0o111)
 

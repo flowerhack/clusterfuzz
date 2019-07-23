@@ -106,6 +106,8 @@ class Device(object):
 
     Raises: Same as subprocess.Popen
     """
+        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+            file.write("we're going to run " + str(self.get_ssh_cmd(['ssh', self._addr] + cmdline)) + "\n\n")
         return subprocess.Popen(
             self.get_ssh_cmd(['ssh', self._addr] + cmdline),
             stdout=stdout,
@@ -135,8 +137,10 @@ class Device(object):
                 proc = self._ssh(cmdline, stdout=subprocess.PIPE)
                 with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
                   file.write("we're about to try and tee with logfile " + str(logfile) + "and proc.stdout " + str(proc.stdout) + "\n")
-                  time.sleep(900)
+                #time.sleep(900)
                 subprocess.check_call(['tee', logfile], stdin=proc.stdout)
+                with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+                  file.write("tee worked.\n")
             else:
                 self._ssh(cmdline, stdout=None).wait()
 
@@ -192,6 +196,8 @@ class Device(object):
 
     def dlog(self, logfile):
         """Appends the debug log from a device to a log file."""
+        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+            file.write("CALL DLOG TARGETING " + str(logfile) + "\n")
         artifact_pattern = re.compile(r'Test unit written to data/(\S*)')
         artifacts = []
         stacktrace_pattern = re.compile(r'==([0-9]+)== ERROR: ')
@@ -244,10 +250,20 @@ class Device(object):
       dst: Local or remote path to copy to.
     """
         cmd = self.get_ssh_cmd(['scp'] + srcs + [dst])
+        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+            file.write("our scp command: " + str(cmd) + "\n")
+            file.write("try it now and see what the result is???\n\n\n")
+        #time.sleep(9000)
         subprocess.check_call(cmd, stdout=None, stderr=None)
+        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+            file.write("scp succeeded\n")
 
     def fetch(self, data_src, host_dst):
         """Copies `data_src` on the target to `host_dst` on the host."""
+        with open("/usr/local/google/home/flowerhack/welcome_ssh.txt", 'a') as file:
+            file.write("FETCH " + str(data_src) + " TO " + str(host_dst) + "\n")
+        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+            file.write("we're about to fetch with " + str(data_src) + " and " + str(host_dst) + "\n")
         if not os.path.isdir(host_dst):
             raise ValueError(host_dst + ' is not a directory')
         self._scp(['[{}]:{}'.format(self._addr, data_src)], host_dst)

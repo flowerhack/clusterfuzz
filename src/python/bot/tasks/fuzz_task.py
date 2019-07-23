@@ -838,14 +838,14 @@ def run_fuzzer(fuzzer, fuzzer_directory, testcase_directory, data_directory,
           output=fuzzer_output)
 
   # Store fuzzer run results.
-  store_fuzzer_run_results(testcase_file_paths, fuzzer, fuzzer_command,
-                           fuzzer_output, fuzzer_return_code, fuzzer_revision,
-                           generated_testcase_count, testcase_count,
-                           generated_testcase_string)
+  #store_fuzzer_run_results(testcase_file_paths, fuzzer, fuzzer_command,
+  #                         fuzzer_output, fuzzer_return_code, fuzzer_revision,
+  #                         generated_testcase_count, testcase_count,
+  #                         generated_testcase_string)
 
   # Upload blackbox fuzzer test cases to GCS on a small number of runs.
-  coverage_uploader.upload_testcases_if_needed(
-      fuzzer.name, testcase_file_paths, testcase_directory, data_directory)
+  #coverage_uploader.upload_testcases_if_needed(
+  #    fuzzer.name, testcase_file_paths, testcase_directory, data_directory)
 
   # Make sure that there are testcases generated. If not, set the error flag.
   error_occurred = not testcase_file_paths

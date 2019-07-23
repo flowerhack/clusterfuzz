@@ -98,6 +98,7 @@ class Fuzzer(object):
         else:
             self._output = self.host.join(
                 'test_data', 'fuzzing', self.pkg, self.tgt)
+        self._results_output = self.host.join('test_data', 'fuzzing', self.pkg, self.tgt)
         self._foreground = foreground
 
     def __str__(self):
@@ -146,12 +147,20 @@ class Fuzzer(object):
         else:
             return os.path.join(self._output, 'latest')
 
+    def results_output(self, relpath=None):
+        if relpath:
+            return os.path.join(self._results_output, relpath)
+        else:
+            return self._results_output
+
     def url(self):
         return 'fuchsia-pkg://fuchsia.com/%s#meta/%s.cmx' % (self.pkg, self.tgt)
 
     def run(self, fuzzer_args, logfile=None):
         fuzz_cmd = ['run', self.url(), '-artifact_prefix=data/'] + fuzzer_args
         print('+ ' + ' '.join(fuzz_cmd))
+        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+            file.write("it's running..., logfile: " + str(logfile) + "\n")
         self.device.ssh(fuzz_cmd, quiet=False, logfile=logfile)
 
     def start(self, fuzzer_args):
@@ -174,17 +183,22 @@ class Fuzzer(object):
         results = os.path.join(
             self._output,
             datetime.datetime.utcnow().isoformat())
-        try:
-            os.unlink(self.results())
-        except OSError as e:
-            if e.errno != errno.ENOENT:
-                raise
+        #try:
+        #    os.unlink(self.results())
+        #except OSError as e:
+        #    if e.errno != errno.ENOENT:
+        #        raise
         try:
             os.makedirs(results)
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-        os.symlink(results, self.results())
+        #os.symlink(results, self.results())
+        self._results_output = results
+        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+            file.write("starting, results output to " + str(self._results_output) + "\n")
+        with open("/usr/local/google/home/flowerhack/where-files-go.txt", 'a') as file:
+            file.write(str(self._results_output) + "\n")
 
         if len(filter(lambda x: x.startswith('-jobs='), fuzzer_args)) == 0:
             if self._foreground:
@@ -196,7 +210,7 @@ class Fuzzer(object):
             fuzzer_args.append('data/corpus/')
 
         if self._foreground:
-            self.run(fuzzer_args, logfile=self.results('fuzz-0.log'))
+            self.run(fuzzer_args, logfile=self.results_output('fuzz-0.log'))
         else:
             self.device.ssh(['rm', self.data_path('fuzz-0.log')])
             self.run(fuzzer_args)
@@ -206,13 +220,13 @@ class Fuzzer(object):
         while self.is_running():
             time.sleep(2)
         if not self._foreground:
-            self.device.fetch(self.data_path('fuzz-*.log'), self.results())
+            self.device.fetch(self.data_path('fuzz-*.log'), self.results_output())
         artifacts = []
-        for log in os.listdir(self.results()):
+        for log in os.listdir(self.results_output()):
             if log.startswith('fuzz-') and log.endswith('.log'):
-                artifacts += self.device.dlog(self.results(log))
+                artifacts += self.device.dlog(self.results_output(log))
         for artifact in artifacts:
-            self.device.fetch(self.data_path(artifact), self.results())
+            self.device.fetch(self.data_path(artifact), self.results_output())
 
     def stop(self):
         """Stops any processes with a matching component manifest on the device."""

@@ -376,28 +376,28 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     self._test_qemu_ssh()
     with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
       file.write("time to start a fuzzer...\n")
-      file.write("results will be in " + str(self.fuzzer.results()) + "\n")
+
     # We don't return from this function before the crash_result stuff happens.
     # So: symbolization has to happen elsewher.e
     self.fuzzer.start([])
     with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
       file.write("did fuzzer start!\n")
-      file.write("results in: " + str(self.fuzzer.results()) + "\n")
-    self.device.fetch(self.fuzzer.data_path('fuzz-*.log'), self.fuzzer.results())
+      file.write("results in: " + self.fuzzer._results_output + "\n")
+    self.device.fetch(self.fuzzer.data_path('fuzz-*.log'), self.fuzzer.results_output())
     with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
       file.write("performed a fetch\n")
-    for log in os.listdir(self.fuzzer.results()):
+    for log in os.listdir(self.fuzzer.results_output()):
       with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
         file.write("about to dlog\n")
       if log.startswith('fuzz-') and log.endswith('.log'):
         with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
           file.write("really about to dlog\n")
-        artifacts += self.device.dlog(self.fuzzer.results(log))
+        artifacts += self.device.dlog(self.fuzzer.results_output(log))
         with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
           file.write("just did dlog\n")
     with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
       file.write("check it out now.\n")
-    time.sleep(900)
+    #time.sleep(900)
     #sleep(900)
     # TODO(flowerhack): Modify fuzzer.run() to return a ProcessResult, rather
     # than artisinally handcrafting one here.
