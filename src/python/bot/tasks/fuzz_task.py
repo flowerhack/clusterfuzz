@@ -838,6 +838,9 @@ def run_fuzzer(fuzzer, fuzzer_directory, testcase_directory, data_directory,
           output=fuzzer_output)
 
   # Store fuzzer run results.
+  # TODO(flowerhack): This function is buggy but only on Fuchsia.
+  # Comment it back in once you've fixed the issue for Fuchsia.
+  # (Ditto for upload_testcases_if_needed)
   #store_fuzzer_run_results(testcase_file_paths, fuzzer, fuzzer_command,
   #                         fuzzer_output, fuzzer_return_code, fuzzer_revision,
   #                         generated_testcase_count, testcase_count,

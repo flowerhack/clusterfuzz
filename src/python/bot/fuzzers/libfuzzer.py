@@ -375,30 +375,32 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     """LibFuzzerCommon.fuzz override."""
     self._test_qemu_ssh()
     with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-      file.write("time to start a fuzzer...\n")
+      file.write("We're starting in bot/fuzzer/libfuzzer.py:FuchsiaQemuLibFuzzerRunner:fuzz\n")
+    import pdb; pdb.set_trace()
+    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+      file.write("We're past the trace point\n")
 
     # We don't return from this function before the crash_result stuff happens.
     # So: symbolization has to happen elsewher.e
     self.fuzzer.start([])
     with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-      file.write("did fuzzer start!\n")
-      file.write("results in: " + self.fuzzer._results_output + "\n")
+      file.write("We ran our fuzzer.\n")
+      file.write("Results will be in: " + self.fuzzer._results_output + "\n")
     self.device.fetch(self.fuzzer.data_path('fuzz-*.log'), self.fuzzer.results_output())
     with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-      file.write("performed a fetch\n")
+      file.write("We successfully fetched fuzz-0.log.\n")
     for log in os.listdir(self.fuzzer.results_output()):
       with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-        file.write("about to dlog\n")
+        file.write("We're about to call dlog.\n")
       if log.startswith('fuzz-') and log.endswith('.log'):
-        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-          file.write("really about to dlog\n")
         artifacts += self.device.dlog(self.fuzzer.results_output(log))
         with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-          file.write("just did dlog\n")
-    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-      file.write("check it out now.\n")
+          file.write("We called dlog.\n")
+    #with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+    #  file.write("We're about to go to sleep.'\n")
     #time.sleep(900)
-    #sleep(900)
+    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+      file.write("We're done sleeping.'\n")
     # TODO(flowerhack): Modify fuzzer.run() to return a ProcessResult, rather
     # than artisinally handcrafting one here.
     #self.device.store(os.path.join(some_label, '*'), self.fuzzer.data_path('?'))  # TODO add here: that's how we pull proper logs down
@@ -410,12 +412,11 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     with open(unsymbolized_path, 'r') as file:
       fuzzer_process_output = file.read()
     symbolized_path = os.path.join(fuchsia_resources_dir, 'build', 'test_data', 'fuzzing', 'example_fuzzers', 'toy_fuzzer', 'latest', 'symbolized.log')
-    #self.host.symbolize(unsymbolized_path, symbolized_path)
 
     fuzzer_process_result.time_executed = 0
     fuzzer_process_result.command = self.fuzzer.last_fuzz_cmd
     with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-      file.write("returning from fuzz\n")
+      file.write("We've finished the fuzz function.\n")
     return fuzzer_process_result
 
   def run_single_testcase(self,

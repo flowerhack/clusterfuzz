@@ -260,7 +260,10 @@ class Device(object):
         with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
             file.write("our scp command: " + str(cmd) + "\n")
             file.write("try it now and see what the result is???\n\n\n")
-        #time.sleep(9000)
+            file.write("We're going to sleep now.")
+        time.sleep(9000)
+        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+            file.write("Finished the sleep in device.py.\n")
         subprocess.check_call(cmd, stdout=None, stderr=None)
         with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
             file.write("scp succeeded\n")

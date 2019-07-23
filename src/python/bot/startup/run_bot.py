@@ -83,21 +83,16 @@ def task_loop():
     environment.reset_environment()
     try:
       # Run regular updates.
-      logs.log("update task run...")
       update_task.run()
-      logs.log("that's done.")
       update_task.track_revision()
-      logs.log("tracked revision")
 
       task = tasks.get_task()
       if not task:
         continue
-      logs.log("we got a task")
 
       with _Monitor(task):
         with task.lease():
           # Execute the command and delete the task.
-          logs.log("processing task")
           commands.process_command(task)
     except SystemExit as e:
       exception_occurred = True
@@ -123,7 +118,6 @@ def task_loop():
 def main():
   """Prepare the configuration options and start requesting tasks."""
   logs.configure('run_bot')
-  logs.log("what?")
 
   root_directory = environment.get_value('ROOT_DIR')
   if not root_directory:
@@ -150,7 +144,6 @@ def main():
     from bot.untrusted_runner import untrusted as untrusted_worker
     untrusted_worker.start_server()
     assert False, 'Unreachable code'
-  logs.log("almos there")
 
   while True:
     # task_loop should be an infinite loop,
