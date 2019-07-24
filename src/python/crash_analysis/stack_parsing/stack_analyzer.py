@@ -1025,7 +1025,7 @@ def get_crash_data(crash_data, symbolize_flag=True):
   #  crash_stacktrace_without_inlines = get_fuchsia_symbolized()
     #  return True
   #elif symbolize_flag:
-  if symbolize_flag:
+  if symbolize_flag and environment.platform() != 'FUCHSIA':
     # Defer imports since stack_symbolizer pulls in a lot of things.
     from crash_analysis.stack_parsing import stack_symbolizer
     crash_stacktrace_with_inlines = stack_symbolizer.symbolize_stacktrace(
@@ -1076,8 +1076,10 @@ def get_crash_data(crash_data, symbolize_flag=True):
 
     with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
       file.write("Check for logs in: " + str(environment.get_value('FUCHSIA_RESOURCES_DIR')) + "\n")
+
+    #return crash_data
     #time.sleep(900)
-    pass
+    #pass
 
   # Compose the StackAnalyzerState object.
   state = StackAnalyzerState(symbolized=symbolize_flag)
@@ -1349,8 +1351,8 @@ def get_crash_data(crash_data, symbolize_flag=True):
         type_filter=fix_sanitizer_crash_type)
 
     # Overwrite Unknown-crash type with more generic UNKNOWN type.
-    with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-      file.write("maybe an unknown crash?\n")
+    #with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
+    #  file.write("maybe an unknown crash?\n")
     if state.crash_type == 'Unknown-crash':
       with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
         file.write("it's an unknown crash\n")
@@ -1734,5 +1736,8 @@ def get_crash_data(crash_data, symbolize_flag=True):
 
   # Convert crash parameters into a generic format regardless of the tool used.
   filter_crash_parameters(state)
+
+  with open("/usr/local/google/home/flowerhack/aw-yiss-results.txt", "a") as file:
+    file.write("alright it's gotime.\n")
 
   return state

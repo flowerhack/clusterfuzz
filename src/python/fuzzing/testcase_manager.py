@@ -462,6 +462,10 @@ def run_testcase_and_return_result_in_queue(crash_queue,
       stack_file_path = os.path.join(crash_stacks_directory,
                                      utils.string_hash(file_path))
       utils.write_data_to_file(crash_output, stack_file_path)
+      with open("/usr/local/google/home/flowerhack/wtf333.txt", "a") as file:
+        file.write("We're about to put the crash in the queue.\n")
+        if upload_output:
+          file.write("And we're uploading the output.\n")
 
       # Put crash/no-crash results in the crash queue.
       crash_queue.put(

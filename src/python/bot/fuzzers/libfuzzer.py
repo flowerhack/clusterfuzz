@@ -24,6 +24,7 @@ import time
 from base import retry
 from bot.fuzzers import engine_common
 from bot.fuzzers.libFuzzer import constants
+from crash_analysis import crash_analyzer
 from platforms import fuchsia
 from platforms.fuchsia.util.device import Device
 from platforms.fuchsia.util.fuzzer import Fuzzer
@@ -432,8 +433,13 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
 
     with open(self.fuzzer.results_output('fuzz-0.log')) as file:
       symbolized_output = file.read()
+    is_crash = crash_analyzer.is_memory_tool_crash(symbolized_output)
     fuzzer_process_result = new_process.ProcessResult()
-    fuzzer_process_result.return_code = 0
+    # Use is_memory_tool_crash here. return_code is 
+    if is_crash:
+      fuzzer_process_result.return_code = 1
+    else:
+      fuzzer_process_result.return_code = 0
     fuzzer_process_result.output = symbolized_output
     fuchsia_resources_dir = environment.get_value('FUCHSIA_RESOURCES_DIR')
     #unsymbolized_path = os.path.join(fuchsia_resources_dir, 'build', 'test_data', 'fuzzing', 'example_fuzzers', 'toy_fuzzer', 'latest', 'zircon.log')
