@@ -161,7 +161,7 @@ class Fuzzer(object):
         print('+ ' + ' '.join(fuzz_cmd))
         with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
             file.write("it's running..., logfile: " + str(logfile) + "\n")
-        self.device.ssh(fuzz_cmd, quiet=False, logfile=logfile)
+        self.device.ssh(fuzz_cmd, quiet=True, logfile=logfile)
 
     def start(self, fuzzer_args):
         """Runs the fuzzer.

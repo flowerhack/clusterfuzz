@@ -87,9 +87,9 @@ class Device(object):
                 with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
                     file.write("modding scp\n")
                 opt = 'P'
-            else:
-                with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-                    file.write("opt is " + str(opt) + " and result[0] is " + str(result[0]) + "\n")
+            #else:
+            #    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+            #        file.write("opt is " + str(opt) + " and result[0] is " + str(result[0]) + "\n")
             if len(args) == 0:
                 result.append('-' + opt)
             else:
@@ -260,17 +260,17 @@ class Device(object):
         with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
             file.write("our scp command: " + str(cmd) + "\n")
             file.write("try it now and see what the result is???\n\n\n")
-            file.write("We're going to sleep now.")
-        time.sleep(9000)
-        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-            file.write("Finished the sleep in device.py.\n")
+            #file.write("We're going to sleep now.")
+       # time.sleep(9000)
+        #with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+        #    file.write("Finished the sleep in device.py.\n")
         subprocess.check_call(cmd, stdout=None, stderr=None)
         with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
             file.write("scp succeeded\n")
 
     def fetch(self, data_src, host_dst):
         """Copies `data_src` on the target to `host_dst` on the host."""
-        with open("/usr/local/google/home/flowerhack/welcome_ssh.txt", 'a') as file:
+        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
             file.write("FETCH " + str(data_src) + " TO " + str(host_dst) + "\n")
         with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
             file.write("we're about to fetch with " + str(data_src) + " and " + str(host_dst) + "\n")

@@ -868,6 +868,8 @@ def main(argv):
       additional_args=arguments + [artifact_prefix],
       extra_env=extra_env)
 
+  # TODO(flowerhack)?
+
   if (not use_minijail and
       fuzz_result.return_code == constants.LIBFUZZER_ERROR_EXITCODE):
     # Minijail returns 1 if the exit code is nonzero.

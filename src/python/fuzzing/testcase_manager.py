@@ -295,6 +295,7 @@ def run_testcase(thread_index, file_path, gestures, env_copy):
         file_path, user_profile_index=thread_index, needs_http=needs_http)
 
     # Run testcase.
+    # TODO(flowerhack): make sure this command i sthe launcher? 
     return process_handler.run_process(
         command,
         timeout=test_timeout,
@@ -437,6 +438,8 @@ def run_testcase_and_return_result_in_queue(crash_queue,
     # Run testcase and check whether a crash occurred or not.
     return_code, crash_time, output = run_testcase(thread_index, file_path,
                                                    gestures, env_copy)
+    with open("/usr/local/google/home/flowerhack/testcase_manager.txt", 'a') as file:
+      file.write("We ran the testcase " + str(file_path) + " (thread index: " + str(thread_index) + ")\n")
 
     # Pull testcase directory to host to get any stats files.
     if environment.is_trusted_host():
@@ -445,6 +448,8 @@ def run_testcase_and_return_result_in_queue(crash_queue,
 
     # Analyze the crash.
     crash_output = _get_crash_output(output)
+    with open("/usr/local/google/home/flowerhack/testcase_manager.txt", 'a') as file:
+      file.write("Our crash output is  " + crash_output + "\n\n\n")
     crash_result = CrashResult(return_code, crash_time, crash_output)
     if crash_result.is_crash():
       # Initialize resource list with the testcase path.

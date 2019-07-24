@@ -1127,8 +1127,8 @@ def get_crash_data(crash_data, symbolize_flag=True):
     # ASSERT_NOT_REACHED prints a single line error then triggers a crash. We
     # set the crash state here, but look for the stack after a crash on an
     # unknown address.
-    with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-      file.write("Updating state on match 1\n")
+    #with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
+    #  file.write("Updating state on match 1\n")
     update_state_on_match(
         ASSERT_NOT_REACHED_REGEX,
         line,
@@ -1137,8 +1137,8 @@ def get_crash_data(crash_data, symbolize_flag=True):
         reset=True)
 
     # Platform specific: Linux gdb crash type format.
-    with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-      file.write("Updating state on match 2\n")
+    #with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
+    #  file.write("Updating state on match 2\n")
     update_state_on_match(
         LINUX_GDB_CRASH_TYPE_REGEX,
         line,
@@ -1147,14 +1147,14 @@ def get_crash_data(crash_data, symbolize_flag=True):
         type_filter=lambda s: s.upper())
 
     # Platform specific: Linux gdb crash address format.
-    with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-      file.write("Updating state on match 3\n")
+    #with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
+    #  file.write("Updating state on match 3\n")
     update_state_on_match(
         LINUX_GDB_CRASH_ADDRESS_REGEX, line, state, address_from_group=1)
 
     # Platform specific: Mac gdb style crash address format.
-    with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-      file.write("Updating state on match 4\n")
+    #with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
+    #  file.write("Updating state on match 4\n")
     update_state_on_match(
         MAC_GDB_CRASH_ADDRESS_REGEX, line, state, address_from_group=1)
 

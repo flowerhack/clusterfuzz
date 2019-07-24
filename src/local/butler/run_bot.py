@@ -119,7 +119,7 @@ def execute(args):
           'bazel run //go/untrusted_runner:worker',
           cwd=os.path.join(original_root_dir, 'src'))
     else:
-      import pdb; pdb.set_trace()
+      #import pdb; pdb.set_trace()
       proc = common.execute_async('python src/python/bot/startup/run_bot.py')
 
     def _stop_handler(*_):
