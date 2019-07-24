@@ -328,9 +328,13 @@ def run_process(cmdline,
       logs.log_error('Unable to connect to X server, exiting.')
       os.system('sudo killall -9 Xvfb blackbox >/dev/null 2>&1')
       sys.exit(0)
+  with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+    file.write("Checking output: " + str(output) + "\n")
 
   if testcase_run and (crash_analyzer.is_memory_tool_crash(output) or
                        crash_analyzer.is_check_failure_crash(output)):
+    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+      file.write("yass queen.\n")
     return_code = 1
 
   # If a crash is found, then we add the memory state as well.

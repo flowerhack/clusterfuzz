@@ -376,10 +376,16 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     # Get the crash from the device.
     self.device.fetch(
         self.fuzzer.data_path('crash*'), self.fuzzer.results_output())
+    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+      file.write("We grabbed the crash, check " + str(self.fuzzer.results_output()) + "\n")
 
     for log in os.listdir(self.fuzzer.results_output()):
+      with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+        file.write("We're about to call dlog.\n")
       if log.startswith('fuzz-0.log'):
         self.device.dlog(self.fuzzer.results_output(log))
+        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+          file.write("We called dlog.\n")
 
     # Clusterfuzz assumes that the Libfuzzer output points to an absolute path,
     # where it can find the crash file.
@@ -405,6 +411,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
             new_file.write(line)
     os.remove(self.fuzzer.results_output('fuzz-0.log'))
     os.rename(new_file_handle_path, self.fuzzer.results_output('fuzz-0.log'))
+    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+      file.write("Did a truly wild regex.\n")
 
   def fuzz(self,
            corpus_directories,
@@ -414,7 +422,12 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            extra_env=None):
     """LibFuzzerCommon.fuzz override."""
     self._test_qemu_ssh()
+    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+      file.write("We're starting in bot/fuzzer/libfuzzer.py:FuchsiaQemuLibFuzzerRunner:fuzz\n")
     self.fuzzer.start([])
+    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+      file.write("We ran our fuzzer.\n")
+      file.write("Results will be in: " + self.fuzzer._results_output + "\n")
     self.fetch_and_process_logs_and_crash()
 
     # Checking for is_crash here, instead of a more conventional location,
@@ -427,13 +440,12 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     # the "fuzzer start" code return its own ProcessResult. For now, we simply
     # craft one by hand here.
     fuzzer_process_result = new_process.ProcessResult()
-    if is_crash:
-      fuzzer_process_result.return_code = 1
-    else:
-      fuzzer_process_result.return_code = 0
+    fuzzer_process_result.return_code = 0
     fuzzer_process_result.output = symbolized_output
     fuzzer_process_result.time_executed = 0
     fuzzer_process_result.command = environment.get_value('FUZZ_TARGET')
+    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
+      file.write("We've finished the fuzz function.\n")
     return fuzzer_process_result
 
   def run_single_testcase(self,
