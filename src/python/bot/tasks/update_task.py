@@ -329,20 +329,16 @@ def run():
   # steps.
   try:
     # Update heartbeat with current time.
-    logs.log("update heartbeat")
     data_handler.update_heartbeat()
 
     # Download new layout tests once per day.
-    logs.log("update tests if needed")
     update_tests_if_needed()
 
     # Remove unused builds once per day.
-    logs.log("remove unused buidls")
     build_manager.remove_unused_builds()
 
     # Check overall free disk space. If we are running too low, clear all
     # data directories like builds, fuzzers, data bundles, etc.
-    logs.log("low on disk space")
     shell.clear_data_directories_on_low_disk_space()
   except Exception:
     logs.log_error('Error occurred while running update task.')

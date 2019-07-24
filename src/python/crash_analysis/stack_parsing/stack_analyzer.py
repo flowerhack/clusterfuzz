@@ -18,7 +18,6 @@ from builtins import range
 import os
 import re
 import subprocess
-import time
 
 from base import utils
 from config import local_config
@@ -26,9 +25,6 @@ from crash_analysis import crash_analyzer
 from crash_analysis.stack_parsing import stack_parser
 from system import environment
 
-#from platforms.fuchsia.util.device import Device
-#from platforms.fuchsia.util.fuzzer import Fuzzer
-#from platforms.fuchsia.util.host import Host
 
 C_CPP_EXTENSIONS = ['c', 'cc', 'cpp', 'cxx', 'h', 'hh', 'hpp', 'hxx']
 
@@ -993,25 +989,6 @@ def llvm_test_one_input_override(frame, frame_struct):
   return frame
 
 
-def get_fuchsia_symbolized():
-    fuchsia_resources_dir = environment.get_value('FUCHSIA_RESOURCES_DIR')
-    # TODO: obviously need to generalize this, so it's not just restricted to one fuzzer :P
-    # TODO is there a test of some sort for this?
-    with open("/usr/local/google/home/flowerhack/aw-yiss-symbolization.txt", "a") as file:
-      file.write("we're checking out symbolization\n")
-    symbolized_path = os.path.join(fuchsia_resources_dir, 'build', 'test_data', 'fuzzing', 'example_fuzzers', 'toy_fuzzer', 'latest', 'symbolized.log')
-    with open(symbolized_path, 'r') as file:
-        data = file.read()
-    with open("/usr/local/google/home/flowerhack/aw-yiss-symbolization.txt", "a") as file:
-      file.write(data)
-    return data
-
-
-    # fuchsia/build/test_data/fuzzing/example_fuzzers/toy_fuzzer/latest/symbolized.log
-    # loglistener_path = os.path.join(fuchsia_resources_dir, 'build', 'out', 'default.zircon', 'tools', 'loglistener')
-
-
-
 def get_crash_data(crash_data, symbolize_flag=True):
   """Get crash parameters from crash data.
   Crash parameters include crash type, address, state and stacktrace.
@@ -1020,11 +997,6 @@ def get_crash_data(crash_data, symbolize_flag=True):
   inline frames, but we do exclude them for purposes of crash state generation
   (helps in testcase deduplication)."""
   # Decide whether to symbolize or not symbolize the input stacktrace.
-  #if environment.platform() == 'FUCHSIA':
-  #  crash_stacktrace_with_inlines = get_fuchsia_symbolized()
-  #  crash_stacktrace_without_inlines = get_fuchsia_symbolized()
-    #  return True
-  #elif symbolize_flag:
   if symbolize_flag and environment.platform() != 'FUCHSIA':
     # Defer imports since stack_symbolizer pulls in a lot of things.
     from crash_analysis.stack_parsing import stack_symbolizer
@@ -1040,52 +1012,10 @@ def get_crash_data(crash_data, symbolize_flag=True):
     crash_stacktrace_without_inlines = crash_data
   
   # What we want is to import the actual crash_stacktrace here, because what we import above is not the full story.
-  if environment.platform() == 'FUCHSIA':
-
-    with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-      file.write("okay it's about to be real!\n")
-
-#    FUCHSIA_BUILD_REL_PATH = os.path.join('build', 'out', 'default')
-#    fuchsia_pkey_path = environment.get_value('FUCHSIA_PKEY_PATH')
-#    fuchsia_portnum = environment.get_value('FUCHSIA_PORTNUM')
-#    fuchsia_resources_dir = environment.get_value('FUCHSIA_RESOURCES_DIR')
-#    if (not fuchsia_pkey_path or not fuchsia_portnum or
-#        not fuchsia_resources_dir):
-#      raise fuchsia.errors.FuchsiaConfigError(
-#          ('FUCHSIA_PKEY_PATH, FUCHSIA_PORTNUM, or FUCHSIA_RESOURCES_DIR was '
-#           'not set'))
-#    host = Host.from_dir(
-#        os.path.join(fuchsia_resources_dir, FUCHSIA_BUILD_REL_PATH))
-#    device = Device(host, 'localhost', fuchsia_portnum)
-    # Fuchsia fuzzer names have the format {package_name}/{binary_name}.
-    # TODO(ochang): Properly handle fuzzers with '/' in the binary name.
-#    package, target = environment.get_value('FUZZ_TARGET').split('/')
-#    fuzzer = Fuzzer(device, package, target, foreground=True)
-#    device.set_ssh_option('StrictHostKeyChecking no')
-#    device.set_ssh_option('UserKnownHostsFile=/dev/null')
-#    device.set_ssh_identity(fuchsia_pkey_path)
-
-#    unsymbolized_path = os.path.join(fuchsia_resources_dir, 'build', 'test_data', 'fuzzing', 'example_fuzzers', 'toy_fuzzer', 'latest', 'zircon.log')
-#    with open(unsymbolized_path, 'r') as file:
-#      fuzzer_process_output = file.read()
-#    symbolized_path = os.path.join(fuchsia_resources_dir, 'build', 'test_data', 'fuzzing', 'example_fuzzers', 'toy_fuzzer', 'latest', 'symbolized.log')
-#    with open(unsymbolized_path, 'r') as log_in:
-#      with open(symbolized_path, 'w') as log_out:
-#        host.symbolize(log_in, log_out)
-
-
-    with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-      file.write("Check for logs in: " + str(environment.get_value('FUCHSIA_RESOURCES_DIR')) + "\n")
-
-    #return crash_data
-    #time.sleep(900)
-    #pass
 
   # Compose the StackAnalyzerState object.
   state = StackAnalyzerState(symbolized=symbolize_flag)
   state.crash_stacktrace += crash_stacktrace_with_inlines
-  with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-    file.write("Current state.crash_stacktrace: " + str(state.crash_stacktrace) + " .\n")
   # We always want to detect v8 runtime errors in analyze task, and
   # we don't expect DETECT_V8_RUNTIME_ERRORS to be specified in jobs
   # since we opt fuzzers into it.
@@ -1111,8 +1041,6 @@ def get_crash_data(crash_data, symbolize_flag=True):
     # Bail out from crash paramater parsing if we detect this is a out-of-memory
     # signature.
     if not detect_ooms_and_hangs and OUT_OF_MEMORY_REGEX.match(line):
-      with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-        file.write("bailing out at exit 1\n")
       return StackAnalyzerState()
 
     # Ignore aborts, breakpoints and ills for asserts, check and dcheck
@@ -1129,8 +1057,6 @@ def get_crash_data(crash_data, symbolize_flag=True):
     # ASSERT_NOT_REACHED prints a single line error then triggers a crash. We
     # set the crash state here, but look for the stack after a crash on an
     # unknown address.
-    #with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-    #  file.write("Updating state on match 1\n")
     update_state_on_match(
         ASSERT_NOT_REACHED_REGEX,
         line,
@@ -1139,8 +1065,6 @@ def get_crash_data(crash_data, symbolize_flag=True):
         reset=True)
 
     # Platform specific: Linux gdb crash type format.
-    #with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-    #  file.write("Updating state on match 2\n")
     update_state_on_match(
         LINUX_GDB_CRASH_TYPE_REGEX,
         line,
@@ -1149,19 +1073,14 @@ def get_crash_data(crash_data, symbolize_flag=True):
         type_filter=lambda s: s.upper())
 
     # Platform specific: Linux gdb crash address format.
-    #with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-    #  file.write("Updating state on match 3\n")
     update_state_on_match(
         LINUX_GDB_CRASH_ADDRESS_REGEX, line, state, address_from_group=1)
 
     # Platform specific: Mac gdb style crash address format.
-    #with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-    #  file.write("Updating state on match 4\n")
     update_state_on_match(
         MAC_GDB_CRASH_ADDRESS_REGEX, line, state, address_from_group=1)
 
     # Platform specific: Windows cdb style crash type and address format.
-
     if update_state_on_match(
         WINDOWS_CDB_CRASH_TYPE_ADDRESS_REGEX,
         line,
@@ -1351,11 +1270,7 @@ def get_crash_data(crash_data, symbolize_flag=True):
         type_filter=fix_sanitizer_crash_type)
 
     # Overwrite Unknown-crash type with more generic UNKNOWN type.
-    #with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-    #  file.write("maybe an unknown crash?\n")
     if state.crash_type == 'Unknown-crash':
-      with open("/usr/local/google/home/flowerhack/bailout.txt", "a") as file:
-        file.write("it's an unknown crash\n")
       state.crash_type = 'UNKNOWN'
 
     # Sanitizer SEGV type for unknown crashes.
@@ -1736,8 +1651,5 @@ def get_crash_data(crash_data, symbolize_flag=True):
 
   # Convert crash parameters into a generic format regardless of the tool used.
   filter_crash_parameters(state)
-
-  with open("/usr/local/google/home/flowerhack/aw-yiss-results.txt", "a") as file:
-    file.write("alright it's gotime.\n")
 
   return state

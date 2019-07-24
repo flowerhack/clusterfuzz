@@ -368,49 +368,22 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     # list" and then run that fuzzer.
     return self.ssh_command('ls')
 
-  def fuzz(self,
-           corpus_directories,
-           fuzz_timeout,
-           artifact_prefix=None,
-           additional_args=None,
-           extra_env=None):
-    """LibFuzzerCommon.fuzz override."""
-    self._test_qemu_ssh()
-    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-      file.write("We're starting in bot/fuzzer/libfuzzer.py:FuchsiaQemuLibFuzzerRunner:fuzz\n")
-
-    # We don't return from this function before the crash_result stuff happens.
-    # So: symbolization has to happen elsewher.e
-    self.fuzzer.start([])
-    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-      file.write("We ran our fuzzer.\n")
-      file.write("Results will be in: " + self.fuzzer._results_output + "\n")
-    #time.sleep(90000)
-    #self.device.fetch(self.fuzzer.data_path('fuzz-*.log'), self.fuzzer.results_output())
-    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-      file.write("We're gonna grab the crash.\n")
+  def fetch_and_process_logs_and_crash(self):
+    # Get the crash from the device.
     self.device.fetch(self.fuzzer.data_path('crash*'), self.fuzzer.results_output())
-    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-      file.write("We grabbed the crash, check " + str(self.fuzzer.results_output()) + "\n")
-    #time.sleep(900)
+
+    # This is probably overkill--the way we're running our fuzzers, fuzz-0.log
+    # should be the only log that ever apperas.
     artifacts = []
     for log in os.listdir(self.fuzzer.results_output()):
-      with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-        file.write("We're about to call dlog.\n")
-      if log.startswith('fuzz-') and log.endswith('.log'):
-        artifacts += self.device.dlog(self.fuzzer.results_output(log))
-        with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-          file.write("We called dlog.\n")
-    #with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-    #  file.write("We're about to go to sleep.'\n")
-    #time.sleep(900)
-    #with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-    #  file.write("We're done sleeping.'\n")
-    # TODO(flowerhack): Modify fuzzer.run() to return a ProcessResult, rather
-    # than artisinally handcrafting one here.
-    #self.device.store(os.path.join(some_label, '*'), self.fuzzer.data_path('?'))  # TODO add here: that's how we pull proper logs down
+      if log.startswith('fuzz-0.log'):
+        self.device.dlog(self.fuzzer.results_output(log))
 
-    # TODO: before returning, we need to replace CRASH_TESTCASE_REGEX with our actual path.
+    # Clusterfuzz assumes that the Libfuzzer output points to an absolute path,
+    # where it can find the crash file.
+    # This doesn't work in our case due to how Fuchsia is run.
+    # So, we make a new file, change the appropriate line with a regex to point
+    # to the true location. Apologies for the hackery.
     import re
     crash_testcase_file_path = None
     for file in os.listdir(self.fuzzer.results_output()):
@@ -428,31 +401,34 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     os.remove(self.fuzzer.results_output('fuzz-0.log'))
     os.rename(new_file_handle_path, self.fuzzer.results_output('fuzz-0.log'))
 
-    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-      file.write("Did a truly wild regex.\n")
+  def fuzz(self,
+           corpus_directories,
+           fuzz_timeout,
+           artifact_prefix=None,
+           additional_args=None,
+           extra_env=None):
+    """LibFuzzerCommon.fuzz override."""
+    self._test_qemu_ssh()
+    self.fuzzer.start([])
+    self.fetch_and_process_logs_and_crash()
 
+    # TODO(flowerhack): Would be nice if we could figure out a way to make
+    # the "fuzzer start" code return its own ProcessResult. For now, we simply
+    # craft one by hand here.
     with open(self.fuzzer.results_output('fuzz-0.log')) as file:
       symbolized_output = file.read()
     is_crash = crash_analyzer.is_memory_tool_crash(symbolized_output)
+
+    # Checking for is_crash here, instead of a more conventional location,
+    # since we're having to manually construct a ProcessResult.
     fuzzer_process_result = new_process.ProcessResult()
-    # Use is_memory_tool_crash here. return_code is 
     if is_crash:
       fuzzer_process_result.return_code = 1
     else:
       fuzzer_process_result.return_code = 0
     fuzzer_process_result.output = symbolized_output
-    fuchsia_resources_dir = environment.get_value('FUCHSIA_RESOURCES_DIR')
-    #unsymbolized_path = os.path.join(fuchsia_resources_dir, 'build', 'test_data', 'fuzzing', 'example_fuzzers', 'toy_fuzzer', 'latest', 'zircon.log')
-    #with open(unsymbolized_path, 'r') as file:
-    #  fuzzer_process_output = file.read()
-    #symbolized_path = os.path.join(fuchsia_resources_dir, 'build', 'test_data', 'fuzzing', 'example_fuzzers', 'toy_fuzzer', 'latest', 'symbolized.log')
-
     fuzzer_process_result.time_executed = 0
     fuzzer_process_result.command = environment.get_value('FUZZ_TARGET')
-    with open("/usr/local/google/home/flowerhack/welcome.txt", 'a') as file:
-      file.write("We've finished the fuzz function.\n")
-
-    #time.sleep(9000)
     return fuzzer_process_result
 
   def run_single_testcase(self,

@@ -1486,8 +1486,6 @@ def execute_task(fuzzer_name, job_type):
 
     if thread_error_occurred:
       break
-  with open("/usr/local/google/home/flowerhack/testcase_manager.txt", 'a') as file:
-    file.write("We're done with a testcase manager round.\n")
 
   # Pull testcase directory to host. The testcase file contents could have been
   # changed (by e.g. libFuzzer) and stats files could have been written.

@@ -108,6 +108,7 @@ def _setup_environment_and_configs(args, appengine_path):
 def execute(args):
   """Run the bot."""
   appengine_path = appengine.find_sdk_path()
+
   _setup_bot_directory(args)
   _setup_environment_and_configs(args, appengine_path)
 
@@ -119,7 +120,6 @@ def execute(args):
           'bazel run //go/untrusted_runner:worker',
           cwd=os.path.join(original_root_dir, 'src'))
     else:
-      #import pdb; pdb.set_trace()
       proc = common.execute_async('python src/python/bot/startup/run_bot.py')
 
     def _stop_handler(*_):

@@ -136,18 +136,12 @@ def ignore_stacktrace(crash_stacktrace):
 
 def is_crash(return_code, console_output):
   """Analyze the return code and console output to see if this was a crash."""
-  with open("/usr/local/google/home/flowerhack/wtf333.txt", "a") as file:
-    file.write("is there a return code?\n")
   if not return_code:
     return False
-  with open("/usr/local/google/home/flowerhack/wtf333.txt", "a") as file:
-    file.write("yep there is\n")
 
   crash_signature = environment.get_value('CRASH_SIGNATURE')
   if crash_signature:
     return re.search(crash_signature, console_output)
-  with open("/usr/local/google/home/flowerhack/wtf333.txt", "a") as file:
-    file.write("we're returning true!!!\n")
 
   return True
 
@@ -209,8 +203,6 @@ def is_memory_tool_crash(stacktrace):
   # Check if have a stacktrace start marker.
   if has_marker(stacktrace, STACKTRACE_TOOL_MARKERS):
     return True
-  with open("/usr/local/google/home/flowerhack/wtf333.txt", "a") as file:
-    file.write("is_memory_tool_crash is returning false\n")
 
   return False
 

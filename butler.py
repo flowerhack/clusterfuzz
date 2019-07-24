@@ -277,7 +277,6 @@ def main():
 
   _setup()
   command = importlib.import_module('local.butler.%s' % args.command)
-  #import pdb; pdb.set_trace()
   command.execute(args)
 
 

@@ -130,7 +130,6 @@ def execute_async(command, extra_environments=None, cwd=None):
   if extra_environments is not None:
     environments.update(extra_environments)
 
-  #import pdb; pdb.set_trace()
   return subprocess.Popen(
       command,
       shell=True,

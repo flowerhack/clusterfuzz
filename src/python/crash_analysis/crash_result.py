@@ -56,14 +56,8 @@ class CrashResult(object):
         self.output, symbolize_flag=False)
     return self._unsymbolized_crash_data
 
-  def read_fuchsia_symbolized():
-    pass
-
   def get_state(self, symbolized=True):
     """Return the crash state."""
-    #if environment.platform() == 'FUCHSIA':
-    #  state = self.read_fuchsia_symbolized()
-    #  return True
     if symbolized:
       state = self.get_symbolized_data()
     else:
@@ -87,33 +81,14 @@ class CrashResult(object):
     return state.crash_type
 
   def is_crash(self, ignore_state=False):
-    with open("/usr/local/google/home/flowerhack/wtf333.txt", "a") as file:
-      file.write("is this thing on\n")
     """Return True if this result was a crash."""
     crashed = crash_analyzer.is_crash(self.return_code, self.output)
-    with open("/usr/local/google/home/flowerhack/aw-yiss-results.txt", "a") as file:
-      file.write("crash_analyzer.is_crash returned " + str(crashed) + " with return code " + str(self.return_code) + " and some output\n")
     if not crashed:
-      with open("/usr/local/google/home/flowerhack/aw-yiss-results.txt", "a") as file:
-        file.write("Inexplicably returning false.\n")
       return False
-
 
     state = self.get_state(symbolized=False)
-    #if environment.platform() == 'FUCHSIA':
-    #  return True
-    with open("/usr/local/google/home/flowerhack/aw-yiss-results.txt", "a") as file:
-      file.write("Checking state.strip(), state is " + str(state) + "\n")
     if not state.strip() and not ignore_state:
-      with open("/usr/local/google/home/flowerhack/aw-yiss-results.txt", "a") as file:
-        file.write("plzbeexplainin\n")
-        file.write("oh no how did we fail D:\n")
-        #file.write("foo" + str(state.__dict__) + "bar\n")
-        #file.write(str(state))
-        #file.write("\nandthat'sallwegot\n")
       return False
-    with open("/usr/local/google/home/flowerhack/aw-yiss-results.txt", "a") as file:
-      file.write("about to return true AW YISS\n")
     return True
 
   def should_ignore(self):
