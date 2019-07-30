@@ -1130,6 +1130,9 @@ def process_crashes(crashes, context):
     time.sleep(1)
 
   logs.log('Finished processing crashes.')
+  logs.log('New crashes: ' + str(new_crash_count) + ', known crashes: ' +
+           str(known_crash_count) + ', processed groups: ' +
+           str(processed_groups))
   return new_crash_count, known_crash_count, processed_groups
 
 
@@ -1707,6 +1710,7 @@ class FuzzingSession(object):
 
     # Transform crashes into fuzz_task.Crash.
     # And filter the crashes (e.g. removing errorneous crashes).
+    logs.log('Raw crash count: ' + str(len(crashes)))
     crashes = [
         crash
         for crash in [crash_constructor(raw_crash) for raw_crash in crashes]
