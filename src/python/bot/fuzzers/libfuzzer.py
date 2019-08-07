@@ -414,6 +414,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     """LibFuzzerCommon.fuzz override."""
     self._test_qemu_ssh()
     self.fuzzer.start([])
+    self.fuzzer.monitor()
     self.fetch_and_process_logs_and_crash()
 
     with open(self.fuzzer.logfile) as logfile:

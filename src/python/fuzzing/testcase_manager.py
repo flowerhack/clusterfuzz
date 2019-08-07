@@ -434,6 +434,7 @@ def run_testcase_and_return_result_in_queue(crash_queue,
     # Run testcase and check whether a crash occurred or not.
     return_code, crash_time, output = run_testcase(thread_index, file_path,
                                                    gestures, env_copy)
+    logs.log("Returning from testcase. Return code: " + str(return_code) + ", crash time: " + str(crash_time) + ", output: " + str(output))
 
     # Pull testcase directory to host to get any stats files.
     if environment.is_trusted_host():
@@ -450,6 +451,7 @@ def run_testcase_and_return_result_in_queue(crash_queue,
       log_time = _get_testcase_time(file_path)
 
     if crash_result.is_crash():
+      logs.log("We determined that is a crash.")
       # Initialize resource list with the testcase path.
       resource_list = [file_path]
       resource_list += get_resource_paths(crash_output)
@@ -475,6 +477,8 @@ def run_testcase_and_return_result_in_queue(crash_queue,
       # correlate it with (not upload_output).
       if upload_output:
         upload_testcase(file_path, log_time)
+    else:
+      logs.log("we determined that is not a crash")
 
     if upload_output:
       # Include full output for uploaded logs (crash output, merge output, etc).
