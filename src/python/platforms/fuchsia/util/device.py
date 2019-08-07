@@ -92,6 +92,8 @@ class Device(object):
         """Returns the SSH executable and options."""
         result = cmd[:1]
         for opt, args in self._ssh_opts.iteritems():
+            if result[0] == 'scp' and opt == 'p':
+                opt = 'P'
             if len(args) == 0:
                 result.append('-' + opt)
             else:
@@ -141,6 +143,9 @@ class Device(object):
         else:
             if logfile:
                 p1 = self._ssh(cmdline, stdout=subprocess.PIPE).popen()
+                #import time
+                #logs.log("We're going to ssh with " + str(self.get_ssh_cmd(['ssh', self._addr] + cmdline)))
+                #time.sleep(9000)
                 p2 = self.host.create_process(['tee', logfile], stdin=p1.stdout)
                 p2.check_call()
             else:

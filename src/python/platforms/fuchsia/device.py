@@ -140,8 +140,8 @@ def initialize_resources_dir():
     raise errors.FuchsiaConfigError('Could not find RESOURCES_DIR')
   fuchsia_resources_dir = os.path.join(resources_dir, 'fuchsia')
 
-  shell.create_directory(
-      fuchsia_resources_dir, create_intermediates=True, recreate=True)
+  #shell.create_directory(
+  #    fuchsia_resources_dir, create_intermediates=True, recreate=False)
 
   # Bucket for QEMU resources.
   fuchsia_resources_url = environment.get_value('FUCHSIA_BUILD_URL')
@@ -154,10 +154,11 @@ def initialize_resources_dir():
       '-m', 'cp', '-r', fuchsia_resources_url, fuchsia_resources_dir
   ]
   logs.log("Fetching Fuchsia build.")
-  result = gsutil.GSUtilRunner().run_gsutil(gsutil_command_arguments)
-  if result.return_code or result.timed_out:
-    raise errors.FuchsiaSdkError('Failed to download Fuchsia '
-                                 'resources: ' + result.output)
+  logs.log("Don't gsutil runner!")
+  #result = gsutil.GSUtilRunner().run_gsutil(gsutil_command_arguments)
+  #if result.return_code or result.timed_out:
+  #  raise errors.FuchsiaSdkError('Failed to download Fuchsia '
+  #                               'resources: ' + result.output)
 
   # Chmod the symbolizers so they can be used easily.
   symbolizer_path = os.path.join(fuchsia_resources_dir, 'build', 'zircon',
@@ -170,6 +171,8 @@ def initialize_resources_dir():
   os.chmod(llvm_symbolizer_path, 0o111)
 
   logs.log("Fuchsia build download complete.")
+  #import time
+  #time.sleep(90000)
 
   return fuchsia_resources_dir
 
@@ -181,7 +184,7 @@ def extend_fvm(fuchsia_resources_dir, drive_path):
                                'default.zircon', 'tools', 'fvm')
   os.chmod(fvm_tool_path, 0o500)
   process = new_process.ProcessRunner(fvm_tool_path,
-                                      [drive_path, 'extend', '--length', '2G'])
+                                      [drive_path, 'extend', '--length', '9G'])
   result = process.run_and_wait()
   if result.return_code or result.timed_out:
     raise errors.FuchsiaSdkError('Failed to extend FVM: ' + result.output)

@@ -102,6 +102,7 @@ class Fuzzer(object):
         self.host = device.host
         self.pkg = pkg
         self.tgt = tgt
+        self.last_fuzz_cmd = None
         if output:
             self._output = output
         else:
@@ -167,6 +168,7 @@ class Fuzzer(object):
     def run(self, fuzzer_args, logfile=None):
         fuzz_cmd = ['run', self.url(), '-artifact_prefix=data/'] + fuzzer_args
         print('+ ' + ' '.join(fuzz_cmd))
+        self.last_fuzz_cmd = self.device.get_ssh_cmd(['ssh', 'localhost'] + fuzz_cmd)
         self.device.ssh(fuzz_cmd, quiet=False, logfile=logfile)
 
     def start(self, fuzzer_args):
@@ -219,7 +221,7 @@ class Fuzzer(object):
         # We tee the output to fuzz-0.log when running in the foreground to
         # make the rest of the plumbing look the same.
         if self._foreground:
-            self.run(fuzzer_args, logfile=self.results('fuzz-0.log'))
+            self.run(fuzzer_args, logfile=self.results_output('fuzz-0.log'))
         else:
             self.device.rm(self.data_path('fuzz-*.log'))
             self.run(fuzzer_args)
@@ -234,14 +236,24 @@ class Fuzzer(object):
         while self.is_running():
             time.sleep(2)
         if not self._foreground:
-            self.device.fetch(self.data_path('fuzz-*.log'), self.results())
-        logs = glob.glob(self.results('fuzz-*.log'))
+            self.device.fetch(self.data_path('fuzz-*.log'), self.results_output())
+        logs = glob.glob(self.results_output('fuzz-*.log'))
         guess_pid = len(logs) == 1
         artifacts = []
         for log in logs:
             artifacts += self.device.process_logs(log, guess_pid)
         for artifact in artifacts:
-            self.device.fetch(self.data_path(artifact), self.results())
+            self.device.fetch(self.data_path(artifact), self.results_output())
+        with open("/usr/local/google/home/flowerhack/data.txt", "w") as file:
+          file.write("Num artifacts: " + str(len(artifacts)))
+          file.write(str(artifacts))
+          file.write("Num logs: " + str(len(logs)))
+          file.write(str(logs))
+          file.write("Guess pid: " + str(guess_pid))
+          file.write("\nWe're trying to fetch " + str(self.data_path(artifact)) + " into " + str(self.results_output()) + " via\n")
+          file.write("\n " + str(self.device.get_ssh_cmd(['scp'] + ['[{}]:{}'.format(self.device._addr, self.data_path(artifact))] + [self.results_output()])) + " \n")
+        #import time
+        #time.sleep(90000)
 
     def stop(self):
         """Stops any processes with a matching component manifest on the device."""
