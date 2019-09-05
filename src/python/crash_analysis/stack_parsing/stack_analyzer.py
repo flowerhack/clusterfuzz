@@ -1049,6 +1049,10 @@ def get_crash_data(crash_data, symbolize_flag=True):
   (helps in testcase deduplication)."""
   # Decide whether to symbolize or not symbolize the input stacktrace.
   # Note that Fuchsia logs are always symbolized.
+  with open('/usr/local/google/home/flowerhack/stack_analyzer.txt', 'a+') as f:
+    f.write('We are getting a crash data: \n')
+    f.write(str(crash_data))
+    f.write('\n')
   if symbolize_flag:
     # Defer imports since stack_symbolizer pulls in a lot of things.
     from crash_analysis.stack_parsing import stack_symbolizer

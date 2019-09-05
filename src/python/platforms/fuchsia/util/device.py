@@ -294,7 +294,12 @@ class Device(object):
       srcs: Local or remote paths to copy from.
       dst: Local or remote path to copy to.
     """
+    #self._scp(srcs, '[{}]:{}'.format(self._addr, data_dst))
     args = self.get_ssh_cmd(['scp'] + srcs + [dst])
+    with open('/usr/local/google/home/flowerhack/repro.txt', 'a+') as f:
+      f.write('It is: ' + str(args) + '\n')
+    #import time
+    #time.sleep(500000)
     p = self.host.create_process(args)
     p.call()
 
@@ -302,12 +307,29 @@ class Device(object):
     """Copies `data_src` on the target to `host_dst` on the host."""
     if not os.path.isdir(host_dst):
       raise ValueError(host_dst + ' is not a directory')
+    with open('/usr/local/google/home/flowerhack/fetch_and_store.txt', 'a+') as f:
+      f.write('about to scp ' + data_src + ' and ' + host_dst + '\n')
+      f.write('scp command is ' + str(self.get_ssh_cmd(['scp'] + [data_src] + [host_dst])) + '\n')
+      #f.write('nap time\n')
     self._scp(['[{}]:{}'.format(self._addr, data_src)], host_dst)
+    #import time
+    #time.sleep(50000000)
 
   def store(self, host_src, data_dst):
     """Copies `host_src` on the host to `data_dst` on the target."""
+    with open('/usr/local/google/home/flowerhack/repro.txt', 'a+') as f:
+      f.write('mkdir forthcoming\n')
     self.ssh(['mkdir', '-p', data_dst])
+    with open('/usr/local/google/home/flowerhack/repro.txt', 'a+') as f:
+      f.write('glob forthcoming: ' + str(host_src) + '\n')
+    #import time
+    #time.sleep(500000)
     srcs = glob.glob(host_src)
     if not srcs:
+      with open('/usr/local/google/home/flowerhack/repro.txt', 'a+') as f:
+        f.write('oh no no srcs D:, ' + str(host_src) + '\n')
       return
+    with open('/usr/local/google/home/flowerhack/fetch_and_store.txt', 'a+') as f:
+      f.write('about to scp ' + str(srcs) + ' and ' + str(data_dst) + '\n')
+      #f.write('scp command is ' + str(self.get_ssh_cmd(['scp'] + [data_src] + [host_dst])) + '\n')
     self._scp(srcs, '[{}]:{}'.format(self._addr, data_dst))

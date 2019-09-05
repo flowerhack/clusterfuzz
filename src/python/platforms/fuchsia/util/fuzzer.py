@@ -169,7 +169,7 @@ class Fuzzer(object):
     print('+ ' + ' '.join(fuzz_cmd))
     self.last_fuzz_cmd = self.device.get_ssh_cmd(['ssh', 'localhost'] +
                                                  fuzz_cmd)
-    self.device.ssh(fuzz_cmd, quiet=False, logfile=logfile)
+    self.device.ssh(fuzz_cmd, quiet=True, logfile=logfile)
 
   def start(self, fuzzer_args):
     """Runs the fuzzer.
@@ -208,6 +208,10 @@ class Fuzzer(object):
     self.device.ssh(['mkdir', '-p', self.data_path('corpus')])
     if [x for x in fuzzer_args if not x.startswith('-')]:
       fuzzer_args.append('data/corpus/')
+    if 'repro' in fuzzer_args:
+      if 'data/corpus/' in fuzzer_args:
+        fuzzer_args.remove('data/corpus/')
+      fuzzer_args.remove('repro')
 
     # Fuzzer logs are saved to fuzz-*.log when running in the background.
     # We tee the output to fuzz-0.log when running in the foreground to
@@ -225,8 +229,14 @@ class Fuzzer(object):
         combines and symbolizes the associated fuzzer and kernel logs. Fetches
         any referenced test artifacts, e.g. crashes.
         """
+    with open('/usr/local/google/home/flowerhack/repro.txt', 'a+') as f:
+      f.write('We are monitoring\n')
     while self.is_running():
-      time.sleep(2)
+      with open('/usr/local/google/home/flowerhack/repro.txt', 'a+') as f:
+        f.write('Sleep for 2!\n')
+        time.sleep(2)
+    with open('/usr/local/google/home/flowerhack/repro.txt', 'a+') as f:
+      f.write('Time to wrap up monitoring\n')
     if not self._foreground:
       self.device.fetch(self.data_path('fuzz-*.log'), self.results_output())
     logs = glob.glob(self.results_output('fuzz-*.log'))
@@ -234,8 +244,12 @@ class Fuzzer(object):
     artifacts = []
     for log in logs:
       artifacts += self.device.process_logs(log, guess_pid)
+    with open('/usr/local/google/home/flowerhack/repro.txt', 'a+') as f:
+      f.write('About to performa  fetch\n')
     for artifact in artifacts:
       self.device.fetch(self.data_path(artifact), self.results_output())
+    with open('/usr/local/google/home/flowerhack/repro.txt', 'a+') as f:
+      f.write('Done with monitoring\n')
 
   def stop(self):
     """Stops any processes with a matching component manifest on the device."""

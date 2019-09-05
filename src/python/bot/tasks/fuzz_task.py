@@ -208,6 +208,7 @@ class Crash(object):
     """Calling setup.archive_testcase_and_dependencies_in_gcs(..)
       and hydrate certain attributes. We single out this method because it's
       expensive and we want to do it at the very last minute."""
+    logs.log("I think my file_path is " + str(self.file_path))
     if self.is_archived():
       return
 
@@ -240,6 +241,7 @@ class Crash(object):
 def find_main_crash(crashes, fuzzer_name, test_timeout):
   """Find the first reproducible crash or the first valid crash.
     And return the crash and the one_time_crasher_flag."""
+  logs.log("In find_main_crash.")
   for crash in crashes:
     # Archiving testcase to blobstore when we need to because it's expensive.
     crash.archive_testcase_in_blobstore()
@@ -254,6 +256,7 @@ def find_main_crash(crashes, fuzzer_name, test_timeout):
     # security flag and crash state generated from re-running testcase in
     # test_for_reproducibility. Minimize task will later update the new crash
     # type and crash state paramaters.
+    logs.log("Gonna test reproducibility")
     if testcase_manager.test_for_reproducibility(
         fuzzer_name, crash.file_path, None, crash.security_flag, test_timeout,
         crash.http_flag, crash.gestures):
@@ -280,8 +283,10 @@ class CrashGroup(object):
     self.crashes = crashes
     if context.fuzz_target:
       fully_qualified_fuzzer_name = context.fuzz_target.fully_qualified_name()
+      logs.log('We got the fully qualified name: ' + str(fully_qualified_fuzzer_name))
     else:
       fully_qualified_fuzzer_name = context.fuzzer_name
+      logs.log('We got the fallback name: ' + str(fully_qualified_fuzzer_name))
 
     self.main_crash, self.one_time_crasher_flag = find_main_crash(
         crashes, fully_qualified_fuzzer_name, context.test_timeout)

@@ -328,6 +328,9 @@ def load_testcase_if_exists(fuzzer_runner,
 
   result = fuzzer_runner.run_single_testcase(
       testcase_file_path, additional_args=arguments)
+  logs.log('ran a single testcase i think')
+  #import time
+  #time.sleep(50000)
 
   print('Running command:',
         get_printable_command(result.command, fuzzer_runner.executable_path,
@@ -337,6 +340,7 @@ def load_testcase_if_exists(fuzzer_runner,
   # Parse performance features to extract custom crash flags.
   parsed_stats = stats.parse_performance_features(output_lines, [], [])
   add_custom_crash_state_if_needed(fuzzer_name, output_lines, parsed_stats)
+  logs.log('returning from running a single testcase')
   print('\n'.join(output_lines))
 
 
@@ -649,6 +653,7 @@ def main(argv):
       })
 
   profiler.start_if_needed('libfuzzer_launcher')
+  logs.log('IT\'S GO TIME')
 
   # Make sure that the fuzzer binary exists.
   build_directory = environment.get_value('BUILD_DIR')
@@ -674,6 +679,7 @@ def main(argv):
 
   # Get corpus directory.
   corpus_directory = environment.get_value('FUZZ_CORPUS_DIR')
+  logs.log('got corpus dir: ')
 
   # Add common arguments which are necessary to be used for every run.
   arguments = expand_with_common_arguments(arguments)
@@ -703,14 +709,15 @@ def main(argv):
     return
 
   # If we don't have a corpus, then that means this is not a fuzzing run.
-  # TODO(flowerhack): Implement this to properly load past testcases.
-  if not corpus_directory and environment.platform() != 'FUCHSIA':
+  if not corpus_directory:
+    logs.log('We are loading past testcase if exists')
     load_testcase_if_exists(runner, testcase_file_path, fuzzer_name,
                             use_minijail, arguments)
     return
 
   # We don't have a crash testcase, fuzz.
 
+  logs.log('fuzz o\'clock')
   # Check dict argument to make sure that it's valid.
   dict_argument = fuzzer_utils.extract_argument(
       arguments, constants.DICT_FLAG, remove=False)
@@ -764,6 +771,7 @@ def main(argv):
 
   corpus_directories.extend(strategy_info.additional_corpus_dirs)
 
+  logs.log('bind corpus dirs in minijail')
   # Bind corpus directories in minijail.
   if use_minijail:
     artifact_prefix = constants.ARTIFACT_PREFIX_FLAG + '/'
@@ -771,12 +779,18 @@ def main(argv):
     artifact_prefix = '%s%s/' % (constants.ARTIFACT_PREFIX_FLAG,
                                  os.path.abspath(
                                      os.path.dirname(testcase_file_path)))
+  logs.log('we will enter try catch')
   # Execute the fuzzer binary with original arguments.
-  fuzz_result = runner.fuzz(
+  try:
+    fuzz_result = runner.fuzz(
       corpus_directories,
       fuzz_timeout=fuzz_timeout,
       additional_args=arguments + [artifact_prefix],
       extra_env=strategy_info.extra_env)
+  except BaseException as e:
+    logs.log('Had an exception: ' + str(e))
+
+  logs.log('did fuzz')
 
   if (not use_minijail and
       fuzz_result.return_code == constants.LIBFUZZER_ERROR_EXITCODE):
@@ -789,6 +803,7 @@ def main(argv):
   # Output can be large, so save some memory by removing reference to the
   # original output which is no longer needed.
   fuzz_result.output = None
+  logs.log('checkcheckcheck')
 
   # Check if we crashed, and get the crash testcase path.
   crash_testcase_file_path = None
@@ -797,6 +812,8 @@ def main(argv):
     if match:
       crash_testcase_file_path = match.group(1)
       break
+
+  logs.log('matchmatchmatch')
 
   if crash_testcase_file_path:
     # Write the new testcase.
@@ -807,7 +824,10 @@ def main(argv):
                                               crash_testcase_file_path[1:])
 
     # Copy crash testcase contents into the main testcase path.
+    logs.log('Moving ' + str(crash_testcase_file_path) + ' to ' + str(testcase_file_path))
     shutil.move(crash_testcase_file_path, testcase_file_path)
+  else:
+    logs.log('We didn\'t get a crash_testcase_file_path')
 
   # Print the command output.
   bot_name = environment.get_value('BOT_NAME', '')

@@ -143,7 +143,10 @@ def ignore_stacktrace(crash_stacktrace):
 
 def is_crash(return_code, console_output):
   """Analyze the return code and console output to see if this was a crash."""
+
   if not return_code:
+    with open('/usr/local/google/home/flowerhack/repro.txt', 'a+') as f:
+      f.write('lol this ain\'t a crash\n')
     return False
 
   crash_signature = environment.get_value('CRASH_SIGNATURE')

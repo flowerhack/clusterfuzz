@@ -306,6 +306,7 @@ def run_testcase(thread_index, file_path, gestures, env_copy):
     command = get_command_line_for_application(
         file_path, user_profile_index=thread_index, needs_http=needs_http)
 
+    logs.log('The command we actually run is ' + str(command))
     # Run testcase.
     return process_handler.run_process(
         command,
@@ -446,6 +447,9 @@ def run_testcase_and_return_result_in_queue(crash_queue,
     # Run testcase and check whether a crash occurred or not.
     return_code, crash_time, output = run_testcase(thread_index, file_path,
                                                    gestures, env_copy)
+    logs.log('TESTCASE OUTPUT:')
+    logs.log(str(output))
+    logs.log('done with testcase output')
 
     # Pull testcase directory to host to get any stats files.
     if environment.is_trusted_host():
@@ -564,14 +568,22 @@ class TestcaseRunner(object):
     app_directory = environment.get_value('APP_DIR')
     warmup_timeout = environment.get_value('WARMUP_TIMEOUT')
     run_timeout = warmup_timeout if round_number == 1 else self._test_timeout
+    logs.log('In testcase_manager.py:run')
 
     if self._is_black_box:
+      logs.log('Is black box')
+      logs.log('Since it is black box we run: ')
+      logs.log(str(self._command))
+      logs.log('and cwd is')
+      logs.log(str(app_directory))
+      logs.log('scream internally!!!')
       return_code, crash_time, output = process_handler.run_process(
           self._command,
           timeout=run_timeout,
           gestures=self._gestures,
           current_working_directory=app_directory)
     else:
+      logs.log('Is not black box')
       result = engine_reproduce(self._engine_impl, self._fuzz_target.binary,
                                 self._testcase_path, self._arguments,
                                 run_timeout)
@@ -659,6 +671,8 @@ class TestcaseRunner(object):
                                  expected_security_flag):
     """Test to see if a crash is fully reproducible or is a one-time crasher."""
     self._pre_run_cleanup()
+    with open('/usr/local/google/home/flowerhack/stack_analyzer.txt', 'a+') as f:
+      f.write('We are now beginning to reproduce. \n')
 
     reproducible_crash_target_count = retries * REPRODUCIBILITY_FACTOR
     round_number = 0
@@ -671,11 +685,17 @@ class TestcaseRunner(object):
 
       crash_result = self.run(round_number)
       state = self._get_crash_state(round_number, crash_result)
+      logs.log('We have a crash state: \n')
+      logs.log(str(vars(state)))
+
 
       # If we don't have an expected crash state, set it to the one from initial
       # crash.
       if not expected_state:
         expected_state = state.crash_state
+      logs.log('\nCompare with expected state')
+      logs.log(str((expected_state)))
+      logs.log('\nand done \n')
 
       if crash_result.is_security_issue() != expected_security_flag:
         logs.log('Detected a crash without the correct security flag.')
@@ -744,6 +764,7 @@ def test_for_reproducibility(fuzzer_name, testcase_path, expected_state,
     return False
 
   crash_retries = environment.get_value('CRASH_RETRIES')
+  logs.log('gonna run test_reproduce_reliability')
   return runner.test_reproduce_reliability(crash_retries, expected_state,
                                            expected_security_flag)
 
