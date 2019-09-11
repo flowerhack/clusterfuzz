@@ -449,11 +449,11 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
       f.write(str(self.fuzzer.data_path()) + '\n')
     self.device.store(testcase_path, self.fuzzer.data_path())
     with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-      f.write('Store worked\n, start fuzzing')
+      f.write('Store worked, start fuzzing\n')
       f.write('testcase path name ' + str(testcase_path_name) + '\n')
       self.fuzzer.start(['repro', 'data/' + testcase_path_name])
     with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-      f.write('enter monitor')
+      f.write('enter monitor\n')
     self.fuzzer.monitor()
     with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
       f.write('enter fetch and process logs and crash')

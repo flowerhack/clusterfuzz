@@ -267,7 +267,7 @@ class Device(object):
 
           # Check for a unit being dumped, i.e. a finding.
           match = mutation_pattern.search(line)
-          if match or (repro_match and ret_code > 0):
+          if match or (repro_match and retcode > 0):
             if pid <= 0 and guess_pid:
               pid = self._guess_pid()
             if pid > 0:

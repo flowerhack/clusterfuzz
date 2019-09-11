@@ -416,13 +416,19 @@ def upload_testcase(testcase_path, log_time):
 def _get_crash_output(output):
   """Returns crash part of the output, excluding unrelated content (e.g. output
   from corpus merge, etc)."""
+  logs.log('We are in _get_crash_output, argument: ')
+  logs.log(str(output))
+  logs.log('End argument.')
   if output is None:
+    logs.log('Somehow output is none?')
     return None
 
   crash_stacktrace_end_marker_index = output.find(
       data_types.CRASH_STACKTRACE_END_MARKER)
   if crash_stacktrace_end_marker_index == -1:
+    logs.log('crash_stacktrace_end_marker_index was -1, just reutrn output.')
     return output
+  logs.log('crash_stacktrace_end_marker_index is ' + str(crash_stacktrace_end_marker_index))
 
   return output[:crash_stacktrace_end_marker_index]
 
