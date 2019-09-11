@@ -138,9 +138,9 @@ class Device(object):
     if quiet:
       if logfile:
         with open(logfile, 'w') as f:
-          self._ssh(cmdline, stdout=f).call()
+          return self._ssh(cmdline, stdout=f).call()
       else:
-        self._ssh(cmdline, stdout=Host.DEVNULL).call()
+        return self._ssh(cmdline, stdout=Host.DEVNULL).call()
     else:
       if logfile:
         p1 = self._ssh(cmdline, stdout=subprocess.PIPE).popen()
@@ -233,7 +233,8 @@ class Device(object):
         pid = int(parts[1])
     return pid
 
-  def process_logs(self, logfile, guess_pid=False):
+  def process_logs(self, logfile, guess_pid=False, retcode=0):
+    # TODO(flowerhack) this is a kwarg crime
     """Constructs a symbolized fuzzer log from a device.
 
         Merges the provided fuzzer log with the symbolized system log for the
@@ -253,6 +254,7 @@ class Device(object):
     mutation_pattern = re.compile(r'^MS: [0-9]*')
     artifacts = []
     artifact_pattern = re.compile(r'Test unit written to data/(\S*)')
+    repro_pattern = re.compile(r'Running: .*')
     with open(logfile) as log:
       with open(logfile + '.tmp', 'w') as tmp:
         for line in log:
@@ -261,9 +263,11 @@ class Device(object):
           if match:
             pid = int(match.group(1))
 
+          repro_match = repro_pattern.search(line)
+
           # Check for a unit being dumped, i.e. a finding.
           match = mutation_pattern.search(line)
-          if match:
+          if match or (repro_match and ret_code > 0):
             if pid <= 0 and guess_pid:
               pid = self._guess_pid()
             if pid > 0:

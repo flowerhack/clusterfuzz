@@ -307,6 +307,7 @@ def run_testcase(thread_index, file_path, gestures, env_copy):
         file_path, user_profile_index=thread_index, needs_http=needs_http)
 
     # Run testcase.
+    logs.log('The command we actually run is ' + str(command))
     return process_handler.run_process(
         command,
         timeout=test_timeout,
@@ -446,6 +447,9 @@ def run_testcase_and_return_result_in_queue(crash_queue,
     # Run testcase and check whether a crash occurred or not.
     return_code, crash_time, output = run_testcase(thread_index, file_path,
                                                    gestures, env_copy)
+    logs.log('TESTCASE OUTPUT:')
+    logs.log(str(output))
+    logs.log('done with testcase output')
 
     # Pull testcase directory to host to get any stats files.
     if environment.is_trusted_host():
@@ -671,11 +675,15 @@ class TestcaseRunner(object):
 
       crash_result = self.run(round_number)
       state = self._get_crash_state(round_number, crash_result)
+      logs.log('We have a crash state:')
+      logs.log(str(vars(state)))
 
       # If we don't have an expected crash state, set it to the one from initial
       # crash.
       if not expected_state:
         expected_state = state.crash_state
+      logs.log('Compare with expected state')
+      logs.log(str(expected_state))
 
       if crash_result.is_security_issue() != expected_security_flag:
         logs.log('Detected a crash without the correct security flag.')

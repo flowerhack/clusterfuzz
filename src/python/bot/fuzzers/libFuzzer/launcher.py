@@ -703,8 +703,7 @@ def main(argv):
     return
 
   # If we don't have a corpus, then that means this is not a fuzzing run.
-  # TODO(flowerhack): Implement this to properly load past testcases.
-  if not corpus_directory and environment.platform() != 'FUCHSIA':
+  if not corpus_directory:
     load_testcase_if_exists(runner, testcase_file_path, fuzzer_name,
                             use_minijail, arguments)
     return
@@ -772,11 +771,13 @@ def main(argv):
                                  os.path.abspath(
                                      os.path.dirname(testcase_file_path)))
   # Execute the fuzzer binary with original arguments.
+  logs.log('About to fuzz!!!')
   fuzz_result = runner.fuzz(
       corpus_directories,
       fuzz_timeout=fuzz_timeout,
       additional_args=arguments + [artifact_prefix],
       extra_env=strategy_info.extra_env)
+  logs.log('Did fuzzing!!!')
 
   if (not use_minijail and
       fuzz_result.return_code == constants.LIBFUZZER_ERROR_EXITCODE):
