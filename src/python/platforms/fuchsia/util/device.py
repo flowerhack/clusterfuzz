@@ -264,10 +264,16 @@ class Device(object):
             pid = int(match.group(1))
 
           repro_match = repro_pattern.search(line)
+          #with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
+          #  f.write('line we\'re trying to repro match is: ' + str(line) + '\n')
 
           # Check for a unit being dumped, i.e. a finding.
           match = mutation_pattern.search(line)
+          #with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
+          #  f.write('repro match is ' + str(repro_match) + ' and retcode is ' + str(retcode) + '\n\n')
           if match or (repro_match and retcode > 0):
+            with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
+              f.write('we are starting the dance\n')
             if pid <= 0 and guess_pid:
               pid = self._guess_pid()
             if pid > 0:
@@ -287,6 +293,8 @@ class Device(object):
           # Echo the line
           tmp.write(line)
     os.rename(logfile + '.tmp', logfile)
+    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
+      f.write('dance is done')
     return artifacts
 
   def _scp(self, srcs, dst):

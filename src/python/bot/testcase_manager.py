@@ -453,9 +453,9 @@ def run_testcase_and_return_result_in_queue(crash_queue,
     # Run testcase and check whether a crash occurred or not.
     return_code, crash_time, output = run_testcase(thread_index, file_path,
                                                    gestures, env_copy)
-    logs.log('TESTCASE OUTPUT:')
-    logs.log(str(output))
-    logs.log('done with testcase output')
+    #logs.log('TESTCASE OUTPUT:')
+    #logs.log(str(output))
+    #logs.log('done with testcase output')
 
     # Pull testcase directory to host to get any stats files.
     if environment.is_trusted_host():
@@ -576,6 +576,8 @@ class TestcaseRunner(object):
     run_timeout = warmup_timeout if round_number == 1 else self._test_timeout
 
     if self._is_black_box:
+      logs.log('In testcase_manager:run, we are taking the _is_black_box path')
+      logs.log('Command is ' + str(self._command))
       return_code, crash_time, output = process_handler.run_process(
           self._command,
           timeout=run_timeout,
@@ -592,6 +594,11 @@ class TestcaseRunner(object):
           result.command, environment.get_value('BOT_NAME'),
           result.time_executed)
       output = log_header + '\n' + result.output
+
+    logs.log('\n\nFinished _is_black_box. Return code is ' + str(return_code))
+    logs.log('Output is:\n')
+    logs.log(str(output))
+    logs.log('\n')
 
     process_handler.terminate_stale_application_instances()
 
@@ -680,15 +687,17 @@ class TestcaseRunner(object):
         break
 
       crash_result = self.run(round_number)
+      logs.log('\nThis is the crash_result immediately after `run` in test_reproduce_reliability\n')
+      logs.log(str(vars(crash_result)))
       state = self._get_crash_state(round_number, crash_result)
-      logs.log('We have a crash state:')
+      logs.log('\nThis is the crash state immediately after _get_crash_state is finished, inside test_reproduce_reliability:\n')
       logs.log(str(vars(state)))
 
       # If we don't have an expected crash state, set it to the one from initial
       # crash.
       if not expected_state:
         expected_state = state.crash_state
-      logs.log('Compare with expected state')
+      logs.log('\nCompare with expected state\n')
       logs.log(str(expected_state))
 
       if crash_result.is_security_issue() != expected_security_flag:
