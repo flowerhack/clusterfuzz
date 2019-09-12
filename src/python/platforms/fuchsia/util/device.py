@@ -272,8 +272,6 @@ class Device(object):
           #with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
           #  f.write('repro match is ' + str(repro_match) + ' and retcode is ' + str(retcode) + '\n\n')
           if match or (repro_match and retcode > 0):
-            with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-              f.write('we are starting the dance\n')
             if pid <= 0 and guess_pid:
               pid = self._guess_pid()
             if pid > 0:
@@ -293,8 +291,6 @@ class Device(object):
           # Echo the line
           tmp.write(line)
     os.rename(logfile + '.tmp', logfile)
-    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-      f.write('dance is done')
     return artifacts
 
   def _scp(self, srcs, dst):

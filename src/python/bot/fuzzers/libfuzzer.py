@@ -386,8 +386,6 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     # This doesn't work in our case due to how Fuchsia is run.
     # So, we make a new file, change the appropriate line with a regex to point
     # to the true location. Apologies for the hackery.
-    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-      f.write('!!! AAA\n')
     crash_location_regex = r'(.*)(Test unit written to )(data/.*)'
     _, new_file_handle_path = tempfile.mkstemp()
     with open(new_file_handle_path, 'w') as new_file:
@@ -406,12 +404,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
             line = re.sub(crash_location_regex,
                           r'\1\2' + crash_testcase_file_path, line)
           new_file.write(line)
-    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-      f.write('!!! BBB\n')
     os.remove(self.fuzzer.logfile)
     shutil.move(new_file_handle_path, self.fuzzer.logfile)
-    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-      f.write('!!! CCC\n')
 
   def fuzz(self,
            corpus_directories,
@@ -420,8 +414,6 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            additional_args=None,
            extra_env=None):
     """LibFuzzerCommon.fuzz override."""
-    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-      f.write('Did fuzzing work\n')
     self._test_qemu_ssh()
     ret = self.fuzzer.start([])
     self.fuzzer.monitor(ret)
@@ -438,8 +430,6 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     fuzzer_process_result.output = symbolized_output
     fuzzer_process_result.time_executed = 0
     fuzzer_process_result.command = self.fuzzer.last_fuzz_cmd
-    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-      f.write('Fuzzing worked\n')
     return fuzzer_process_result
 
   def run_single_testcase(self,
@@ -448,37 +438,20 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
                           additional_args=None):
     with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
       f.write('Starting run_single_testcase\n')
-      testcase_path_name = os.path.basename(os.path.normpath(testcase_path))
-    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-      f.write('Store on device\n')
-      f.write(str(testcase_path) + '\n')
-      f.write(str(self.fuzzer.data_path()) + '\n')
-      f.write('(that\'s the testcase path and fuzzer data path\n')
+    testcase_path_name = os.path.basename(os.path.normpath(testcase_path))
     self.device.store(testcase_path, self.fuzzer.data_path())
-    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-      f.write('Store worked, start fuzzing\n')
-      f.write('testcase path name ' + str(testcase_path_name) + '\n')
     ret = self.fuzzer.start(['repro', 'data/' + testcase_path_name])
-    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-      f.write('enter monitor\n')
     self.fuzzer.monitor(ret)
-    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-      f.write('enter fetch and process logs and crash\n')
     self.fetch_and_process_logs_and_crash()
     with open(self.fuzzer.logfile) as logfile:
       symbolized_output = logfile.read()
-    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-      f.write('here is our repro command\n' + str(self.fuzzer.last_fuzz_cmd))
-      f.write('\n\n and our symbolized output\n' + str(symbolized_output))
-    # TODO maybe sleep here.
-      f.write('\nAND NOW WE SLEEP!!!')
-    #import time
-    #time.sleep(3600)
     fuzzer_process_result = new_process.ProcessResult()
     fuzzer_process_result.return_code = 0
     fuzzer_process_result.output = symbolized_output
     fuzzer_process_result.time_executed = 0
     fuzzer_process_result.command = self.fuzzer.last_fuzz_cmd
+    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
+      f.write('Exiting run_single_testcase')
     return fuzzer_process_result
 
   def ssh_command(self, *args):

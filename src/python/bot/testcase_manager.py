@@ -307,7 +307,6 @@ def run_testcase(thread_index, file_path, gestures, env_copy):
         file_path, user_profile_index=thread_index, needs_http=needs_http)
 
     # Run testcase.
-    logs.log('The command we actually run is ' + str(command))
     return process_handler.run_process(
         command,
         timeout=test_timeout,
@@ -416,9 +415,9 @@ def upload_testcase(testcase_path, log_time):
 def _get_crash_output(output):
   """Returns crash part of the output, excluding unrelated content (e.g. output
   from corpus merge, etc)."""
-  logs.log('We are in _get_crash_output, argument: ')
+  logs.log('We are in _get_crash_output, argument: \n\n')
   logs.log(str(output))
-  logs.log('End argument.')
+  logs.log('\n\nEnd argument.')
   if output is None:
     logs.log('Somehow output is none?')
     return None
@@ -453,9 +452,6 @@ def run_testcase_and_return_result_in_queue(crash_queue,
     # Run testcase and check whether a crash occurred or not.
     return_code, crash_time, output = run_testcase(thread_index, file_path,
                                                    gestures, env_copy)
-    #logs.log('TESTCASE OUTPUT:')
-    #logs.log(str(output))
-    #logs.log('done with testcase output')
 
     # Pull testcase directory to host to get any stats files.
     if environment.is_trusted_host():
@@ -577,7 +573,6 @@ class TestcaseRunner(object):
 
     if self._is_black_box:
       logs.log('In testcase_manager:run, we are taking the _is_black_box path')
-      logs.log('Command is ' + str(self._command))
       return_code, crash_time, output = process_handler.run_process(
           self._command,
           timeout=run_timeout,
@@ -596,9 +591,9 @@ class TestcaseRunner(object):
       output = log_header + '\n' + result.output
 
     logs.log('\n\nFinished _is_black_box. Return code is ' + str(return_code))
-    logs.log('Output is:\n')
+    logs.log('Output is:\n\n')
     logs.log(str(output))
-    logs.log('\n')
+    logs.log('\n\n')
 
     process_handler.terminate_stale_application_instances()
 

@@ -771,13 +771,11 @@ def main(argv):
                                  os.path.abspath(
                                      os.path.dirname(testcase_file_path)))
   # Execute the fuzzer binary with original arguments.
-  logs.log('About to fuzz!!!')
   fuzz_result = runner.fuzz(
       corpus_directories,
       fuzz_timeout=fuzz_timeout,
       additional_args=arguments + [artifact_prefix],
       extra_env=strategy_info.extra_env)
-  logs.log('Did fuzzing!!!')
 
   if (not use_minijail and
       fuzz_result.return_code == constants.LIBFUZZER_ERROR_EXITCODE):
