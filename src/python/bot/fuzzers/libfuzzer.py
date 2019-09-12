@@ -388,6 +388,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     # to the true location. Apologies for the hackery.
     crash_location_regex = r'(.*)(Test unit written to )(data/.*)'
     _, new_file_handle_path = tempfile.mkstemp()
+    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
+      f.write('^^^ Begin fetch_and_process_logs_and_Crash\n')
     with open(new_file_handle_path, 'w') as new_file:
       with open(self.fuzzer.logfile) as old_file:
         for line in old_file:
@@ -403,7 +405,11 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
                 self.fuzzer.results_output(), crash_name)
             line = re.sub(crash_location_regex,
                           r'\1\2' + crash_testcase_file_path, line)
+          with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
+            f.write('----> ' + line)
           new_file.write(line)
+    with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
+      f.write('^^^ end fetch_and_process_logs_and_Crash\n')
     os.remove(self.fuzzer.logfile)
     shutil.move(new_file_handle_path, self.fuzzer.logfile)
 
@@ -445,13 +451,21 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     self.fetch_and_process_logs_and_crash()
     with open(self.fuzzer.logfile) as logfile:
       symbolized_output = logfile.read()
+      with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
+        f.write('~~~ logfile is ' + str(self.fuzzer.logfile) + '\n')
+        f.write('~~~ logfile conents are \n' + symbolized_output)
+        f.write('\n~~~\n')
     fuzzer_process_result = new_process.ProcessResult()
     fuzzer_process_result.return_code = 0
     fuzzer_process_result.output = symbolized_output
     fuzzer_process_result.time_executed = 0
     fuzzer_process_result.command = self.fuzzer.last_fuzz_cmd
     with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
-      f.write('Exiting run_single_testcase')
+      f.write('\n\n\n')
+      f.write('The crash result being returned is\n\n\n')
+      f.write(str(fuzzer_process_result.output))
+      f.write('\n\n\n')
+      f.write('Exiting run_single_testcase\n')
     return fuzzer_process_result
 
   def ssh_command(self, *args):

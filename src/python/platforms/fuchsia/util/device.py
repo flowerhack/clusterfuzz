@@ -255,12 +255,16 @@ class Device(object):
     artifacts = []
     artifact_pattern = re.compile(r'Test unit written to data/(\S*)')
     repro_pattern = re.compile(r'Running: .*')
+    line_of_actual_crash = None
     with open(logfile) as log:
       with open(logfile + '.tmp', 'w') as tmp:
         for line in log:
           # Check for a line that tells us the process ID
           match = pid_pattern.search(line)
           if match:
+            with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
+              f.write('!!! LINE OF ACTUAL CRASH FOUND\n')
+            line_of_actual_crash = line
             pid = int(match.group(1))
 
           repro_match = repro_pattern.search(line)
@@ -290,7 +294,21 @@ class Device(object):
 
           # Echo the line
           tmp.write(line)
-    os.rename(logfile + '.tmp', logfile)
+    # Clusterfuzz's stack analyzer expects the
+    # `==[num]== ERROR: [SanitizerName]: [failure type]` line
+    # to occur *before* the stacktrace, so let's insert it that
+    # way here.
+
+    with open(logfile + '.tmp', 'r+') as tmp:
+      with open(logfile + '.tmp2', 'w') as tmp2:
+        tmp2.write(line_of_actual_crash)
+        with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
+          f.write('Wrote \n' + str(line_of_actual_crash) + '\n to logfile.\n')
+        for line in tmp:
+          with open('/usr/local/google/home/flowerhack/claude.txt', 'a+') as f:
+            f.write('!!!line:' + line + '\n')
+          tmp2.write(line)
+    os.rename(logfile + '.tmp2', logfile)
     return artifacts
 
   def _scp(self, srcs, dst):

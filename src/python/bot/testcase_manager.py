@@ -573,6 +573,8 @@ class TestcaseRunner(object):
 
     if self._is_black_box:
       logs.log('In testcase_manager:run, we are taking the _is_black_box path')
+      logs.log('Command is ' +str(self._command))
+      # We take the result of run_process, but 
       return_code, crash_time, output = process_handler.run_process(
           self._command,
           timeout=run_timeout,

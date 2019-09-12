@@ -326,6 +326,8 @@ def load_testcase_if_exists(fuzzer_runner,
   # Add retries for reliability.
   arguments.append('%s%d' % (constants.RUNS_FLAG, constants.RUNS_TO_REPRODUCE))
 
+  logs.log('In load_testcase_if_exists')
+
   result = fuzzer_runner.run_single_testcase(
       testcase_file_path, additional_args=arguments)
 
@@ -704,6 +706,7 @@ def main(argv):
 
   # If we don't have a corpus, then that means this is not a fuzzing run.
   if not corpus_directory:
+    logs.log('We\'re doing load testcase if exists')
     load_testcase_if_exists(runner, testcase_file_path, fuzzer_name,
                             use_minijail, arguments)
     return
