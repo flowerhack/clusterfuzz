@@ -606,6 +606,9 @@ class TestcaseRunner(object):
           'No crash occurred (round {round_number}).'.format(
               round_number=round_number),
           output=output)
+    logs.log('SLEEPING TO ALLOW FOR DEBUGGING')
+    import time
+    time.sleep(3600)
 
     return crash_result
 

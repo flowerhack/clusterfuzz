@@ -22,6 +22,8 @@ import re
 import shutil
 import subprocess
 
+from metrics import logs
+
 from .host import Host
 
 
@@ -119,6 +121,7 @@ class Device(object):
 
     Raises: A Process object.
     """
+    logs.log('In _ssh, calling ' + str(args))
     args = self.get_ssh_cmd(['ssh', self._addr] + cmdline)
     return self.host.create_process(
         args, stdout=stdout, stderr=subprocess.STDOUT)
@@ -316,6 +319,7 @@ class Device(object):
       dst: Local or remote path to copy to.
     """
     args = self.get_ssh_cmd(['scp'] + srcs + [dst])
+    logs.log('In _scp, calling ' + str(args))
     p = self.host.create_process(args)
     p.call()
 
