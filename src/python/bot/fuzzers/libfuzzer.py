@@ -637,6 +637,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
             tmp_dir=None,
             additional_args=None,
             merge_control_file=None):
+    with open('/usr/local/google/home/flowerhack/foo.txt', 'w') as f:
+      f.write('yooo corpus_direcotries is ' + str(corpus_directories) + '\n')
     # TODO(flowerhack): Integrate some notion of a merge timeout.
     self._push_corpora_from_host_to_target(corpus_directories)
 

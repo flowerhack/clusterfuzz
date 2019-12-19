@@ -163,6 +163,8 @@ class CorpusPruningTest(unittest.TestCase, BaseTest):
     ])
     self.mock.setup_build.side_effect = self._mock_setup_build
 
+    shutil.copytree(os.path.join(TEST_DIR, 'corpus'), self.corpus_dir)
+
   def test_prune(self):
     """Basic pruning test."""
     corpus_pruning_task.execute_task('libFuzzer_test_fuzzer',
@@ -289,10 +291,145 @@ class CorpusPruningTestFuchsia(unittest.TestCase, BaseTest):
 
   def test_prune(self):
     """Basic pruning test."""
-    # TODO(flowerhack): Actually test this.
+    print('!!!!!!!! corpus dir is ' + self.corpus_dir)
+    corpus = os.listdir(self.corpus_dir)
+    print('LISTDIR2 IS ' + str(corpus))
+    #import time
+    #time.sleep(6000)
+
     corpus_pruning_task.execute_task(
         'libFuzzer_fuchsia_example_fuzzers-overflow_fuzzer',
         'libfuzzer_asan_fuchsia')
+
+    #quarantined = os.listdir(self.quarantine_dir)
+    #self.assertEqual(1, len(quarantined))
+    #self.assertEqual(quarantined[0],
+    #                 'crash-7acd6a2b3fe3c5ec97fa37e5a980c106367491fa')
+
+    corpus = os.listdir(self.corpus_dir)
+    print('LISTDIR2 IS ' + str(corpus))
+    self.assertEqual(4, len(corpus))
+    self.assertItemsEqual([
+        '39e0574a4abfd646565a3e436c548eeb1684fb57',
+        '7d157d7c000ae27db146575c08ce30df893d3a64',
+        '31836aeaab22dc49555a97edb4c753881432e01d',
+        '6fa8c57336628a7d733f684dc9404fbd09020543',
+    ], corpus)
+
+    testcases = list(data_types.Testcase.query())
+    self.assertEqual(1, len(testcases))
+    self.assertEqual('Null-dereference WRITE', testcases[0].crash_type)
+    self.assertEqual('Foo\ntest_fuzzer.cc\n', testcases[0].crash_state)
+    self.assertEqual(1337, testcases[0].crash_revision)
+    self.assertEqual('test_fuzzer',
+                     testcases[0].get_metadata('fuzzer_binary_name'))
+
+    today = datetime.datetime.utcnow().date()
+    # get_coverage_information on test_fuzzer rather than libFuzzer_test_fuzzer
+    # since the libfuzzer_ prefix is removed when saving coverage info.
+    coverage_info = data_handler.get_coverage_information('test_fuzzer', today)
+
+    self.assertDictEqual(
+        {
+            'corpus_backup_location':
+                u'backup_link',
+            'corpus_location':
+                u'gs://bucket/libFuzzer/test_fuzzer/',
+            'corpus_size_bytes':
+                8,
+            'corpus_size_units':
+                4,
+            'date':
+                today,
+            # Coverage numbers are expected to be None as they come from fuzzer
+            # coverage cron task (see src/go/server/cron/coverage.go).
+            'edges_covered':
+                None,
+            'edges_total':
+                None,
+            'functions_covered':
+                None,
+            'functions_total':
+                None,
+            'fuzzer':
+                u'test_fuzzer',
+            'html_report_url':
+                None,
+            'quarantine_location':
+                u'gs://bucket-quarantine/libFuzzer/test_fuzzer/',
+            'quarantine_size_bytes':
+                2,
+            'quarantine_size_units':
+                1,
+        },
+        coverage_info.to_dict())
+
+    self.assertEqual(self.mock.unpack_seed_corpus_if_needed.call_count, 1)
+
+
+    #from system import new_process
+    #from base import retry
+
+    #@retry.wrap(retries=3, delay=3, function='_test_qemu_ssh')
+    #def _test_qemu_ssh(self, device):
+    """Tests that a VM is up and can be successfully SSH'd into.
+    Raises an exception if no success after MAX_SSH_RETRIES."""
+    #  ssh_test_process = new_process.ProcessRunner('ssh', device.get_ssh_cmd(['ssh', 'localhost', 'echo running on fuchsia!'])[1:])
+    #  result = ssh_test_process.run_and_wait()
+    #  if result.return_code or result.timed_out:
+    #    raise fuchsia.errors.FuchsiaConnectionError(
+    #      'Failed to establish initial SSH connection: ' +
+    #      str(result.return_code) + " , " + str(result.command) + " , " +
+    #      str(result.output))
+    #  return result
+
+    # TODO(flowerhack): Actually test this.
+    #corpus_pruning_task.execute_task(
+    #    'libFuzzer_fuchsia_example_fuzzers-overflow_fuzzer',
+    #    'libfuzzer_asan_fuchsia')
+
+    #FUCHSIA_BUILD_REL_PATH = os.path.join('build', 'out', 'default')
+
+    #from platforms.fuchsia.util.device import Device
+    #from platforms.fuchsia.util.fuzzer import Fuzzer
+    #from platforms.fuchsia.util.host import Host
+
+    # Need to examine the generated files
+    """fuchsia_pkey_path = environment.get_value('FUCHSIA_PKEY_PATH')
+    fuchsia_portnum = environment.get_value('FUCHSIA_PORTNUM')
+    fuchsia_resources_dir = environment.get_value('FUCHSIA_RESOURCES_DIR')
+    if (not fuchsia_pkey_path or not fuchsia_portnum or
+        not fuchsia_resources_dir):
+      raise fuchsia.errors.FuchsiaConfigError(
+          ('FUCHSIA_PKEY_PATH, FUCHSIA_PORTNUM, or FUCHSIA_RESOURCES_DIR was '
+           'not set'))
+
+    fuchsia_resources_dir_plus_build = os.path.join(fuchsia_resources_dir,
+                                                    FUCHSIA_BUILD_REL_PATH)
+    fuchsia_portnum = environment.get_value('FUCHSIA_PORTNUM')
+    host = Host.from_dir(fuchsia_resources_dir_plus_build)
+    device = Device(host, 'localhost', fuchsia_portnum)
+    device.set_ssh_option('StrictHostKeyChecking no')
+    device.set_ssh_option('UserKnownHostsFile=/dev/null')
+    device.set_ssh_identity(fuchsia_pkey_path)"""
+
+    # TODO may not need things under this line
+    # Fuchsia fuzzer names have the format {package_name}/{binary_name}.
+    #package, target = self.executable_path.split('/')
+    #test_data_dir = os.path.join(fuchsia_resources_dir_plus_build,
+    #                             self.FUZZER_TEST_DATA_REL_PATH, package,
+    #                             target)
+
+    # Finally, we set up the Fuzzer object itself, which will run our fuzzer!
+    #sanitizer = environment.get_memory_tool_name(
+    #    environment.get_value('JOB_NAME')).lower()
+    #fuzzer = Fuzzer(
+    #    device,
+    #    package,
+    #    target,
+    #    output=test_data_dir,
+    #    foreground=True,
+    #    sanitizer=sanitizer)
 
 
 class CorpusPruningTestUntrusted(
