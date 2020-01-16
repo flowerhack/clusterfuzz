@@ -320,6 +320,7 @@ class Device(object):
       dst: Local or remote path to copy to.
     """
     args = self.get_ssh_cmd(['scp'] + srcs + [dst])
+    print('SCP COMMAND IS ' + str(self.get_ssh_cmd(['scp'] + srcs + [dst])))
     p = self.host.create_process(args)
     p.call()
 
@@ -332,6 +333,7 @@ class Device(object):
   def store(self, host_src, data_dst):
     """Copies `host_src` on the host to `data_dst` on the target."""
     self.ssh(['mkdir', '-p', data_dst])
+    print('~~~ We have made the directory ' + data_dst)
     srcs = glob.glob(host_src)
     if not srcs:
       return

@@ -411,6 +411,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
   FUZZER_TEST_DATA_REL_PATH = os.path.join('test_data', 'fuzzing')
 
   def _setup_device_and_fuzzer(self):
+    print('Setting up device and fuzzer')
     """Build a Device and Fuzzer object based on QEMU's settings."""
     # These environment variables are set when start_qemu is run.
     # We need them in order to ssh / otherwise communicate with the VM.
@@ -454,11 +455,13 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     # We always assume QEMU is running on __init__, since build_manager sets
     # it up initially. If this isn't the case, _test_ssh will detect and
     # restart QEMU anyway.
+    print('Initing libfuzzer runner')
     super(FuchsiaQemuLibFuzzerRunner, self).__init__(
         executable_path=executable_path, default_args=default_args)
     self._setup_device_and_fuzzer()
 
   def process_logs_and_crash(self, artifact_prefix):
+    print('Process logs and crash')
     """Fetch symbolized logs and crashes."""
     if not artifact_prefix:
       return
@@ -489,6 +492,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     shutil.move(processed_log_path, self.fuzzer.logfile)
 
   def _test_ssh(self):
+    print('Testing ssh')
     """Test the ssh connection."""
     # Test the connection.  If this works, proceed.
     # - If we fail, restart QEMU and test the connection again.
@@ -501,6 +505,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
 
   @retry.wrap(retries=SSH_RETRIES, delay=SSH_WAIT, function='_test_qemu_ssh')
   def _test_qemu_ssh(self):
+    print('test qemu ssh')
     """Tests that a VM is up and can be successfully SSH'd into.
     Raises an exception if no success after MAX_SSH_RETRIES."""
     ssh_test_process = new_process.ProcessRunner(
@@ -516,6 +521,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     return result
 
   def _restart_qemu(self):
+    print('restart qemu')
     """Restart QEMU."""
     logs.log_warn('Connection to fuzzing VM lost. Restarting.')
     stop_qemu()
@@ -535,9 +541,11 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
   def _corpus_target_subdir(self, relpath):
     """ Returns the absolute path of the corpus subdirectory on the target,
     given "relpath", the name of the specific corpus. """
+    print('calling _corpus_target_subdir')
     return os.path.join(self._corpus_directories_target(), relpath)
 
   def _corpus_directories_libfuzzer(self, corpus_directories):
+    print('calling _corpus_directories_libfuzzer')
     """ Returns the corpus directory paths expected by libfuzzer itself. """
     corpus_directories_libfuzzer = []
     for corpus_dir in corpus_directories:
@@ -556,11 +564,13 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
         os.path.join('corpus', os.path.basename(new_corpus_dir_host)))
 
   def _corpus_directories_target(self):
+    print('calling _corpus_directories_target')
     """ Returns the path of the root corpus directory on the target. """
     return self.fuzzer.data_path('corpus')
 
   def _push_corpora_from_host_to_target(self, corpus_directories):
     # Push corpus directories to the device.
+    print('calling _push_corpora_from_host_to_target')
     self._clear_all_target_corpora()
     logs.log('Push corpora from host to target.')
     for corpus_dir in corpus_directories:
@@ -570,6 +580,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
           self._corpus_target_subdir(os.path.basename(corpus_dir)))
 
   def _pull_new_corpus_from_target_to_host(self, corpus_directories):
+    print('printing _pull_new_corpus_from_target_to_host')
     # Appending '/*' indicates we want all the *files* in the target's
     # directory, rather than the directory itself.
     logs.log('Fuzzer ran; pull down corpus')
@@ -577,6 +588,12 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
         corpus_directories) + "/*"
     self.fuzzer.device.fetch(files_in_new_corpus_dir_target,
                              self._new_corpus_dir_host(corpus_directories))
+    # At this point there is nothing in
+    # /data/r/sys/fuchsia.com:example_fuzzers:0#meta:overflow_fuzzer.cmx/corpus/fuchsia_example_fuzzers-overflow_fuzzer_minimized_corpus/*
+    # and there IS stuff in the initial_corpus, but, guess i'll die dot txt
+    print('naptime')
+    #import time
+    #time.sleep(50000000)
 
   def _clear_all_target_corpora(self):
     """ Clears out all the corpora on the target. """
@@ -590,6 +607,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
            additional_args=None,
            extra_env=None):
     """LibFuzzerCommon.fuzz override."""
+    print('running fuzz!!!')
     additional_args = copy.copy(additional_args)
     if additional_args is None:
       additional_args = []
@@ -637,6 +655,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
             tmp_dir=None,
             additional_args=None,
             merge_control_file=None):
+    print('calling merge!!!')
     with open('/usr/local/google/home/flowerhack/foo.txt', 'w') as f:
       f.write('yooo corpus_direcotries is ' + str(corpus_directories) + '\n')
     # TODO(flowerhack): Integrate some notion of a merge timeout.
@@ -649,6 +668,7 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
     target_merge_control_file = None
     if merge_control_file:
       merge_control_dir = os.path.dirname(merge_control_file)
+      print('in if merge control file')
       target_merge_control_dir = self._corpus_target_subdir(
           os.path.basename(merge_control_dir))
       self.fuzzer.device.rm(target_merge_control_dir, recursive=True)
@@ -658,6 +678,8 @@ class FuchsiaQemuLibFuzzerRunner(new_process.ProcessRunner, LibFuzzerCommon):
           os.path.relpath(merge_control_file, merge_control_dir))
 
     # Run merge.
+    print('doing the merge for real!')
+    print('args are: ' + str(self._corpus_directories_libfuzzer(corpus_directories)))
     _, _ = self.fuzzer.merge(
         self._corpus_directories_libfuzzer(corpus_directories) +
         additional_args,

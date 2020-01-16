@@ -94,10 +94,12 @@ class BaseTest(object):
     self.corpus_dir = os.path.join(self.corpus_bucket, 'corpus')
     self.quarantine_dir = os.path.join(self.corpus_bucket, 'quarantine')
     self.shared_corpus_dir = os.path.join(self.corpus_bucket, 'shared')
+    self.fuchsia_corpus_dir = os.path.join(self.corpus_bucket, 'fuchsia')
 
     shutil.copytree(os.path.join(TEST_DIR, 'corpus'), self.corpus_dir)
     shutil.copytree(os.path.join(TEST_DIR, 'quarantine'), self.quarantine_dir)
     shutil.copytree(os.path.join(TEST_DIR, 'shared'), self.shared_corpus_dir)
+    shutil.copytree(os.path.join(TEST_DIR, 'fuchsia'), self.fuchsia_corpus_dir)
 
     os.environ['BOT_TMPDIR'] = self.bot_tmpdir
     os.environ['FUZZ_INPUTS'] = self.fuzz_inputs_disk
@@ -163,10 +165,15 @@ class CorpusPruningTest(unittest.TestCase, BaseTest):
     ])
     self.mock.setup_build.side_effect = self._mock_setup_build
 
-    shutil.copytree(os.path.join(TEST_DIR, 'corpus'), self.corpus_dir)
+    # When this line is in, there's complaining from not-Fuchsia tests that this already exists
+    #shutil.copytree(os.path.join(TEST_DIR, 'corpus'), self.corpus_dir)
 
   def test_prune(self):
     """Basic pruning test."""
+    print('hi hello hi')
+    print('!!!!!!!! for some other test, corpus dir is ' + self.corpus_dir)
+    corpus = os.listdir(self.corpus_dir)
+    print('for some other test, listdir is ' + str(corpus))
     corpus_pruning_task.execute_task('libFuzzer_test_fuzzer',
                                      'libfuzzer_asan_job')
 
@@ -176,6 +183,7 @@ class CorpusPruningTest(unittest.TestCase, BaseTest):
                      'crash-7acd6a2b3fe3c5ec97fa37e5a980c106367491fa')
 
     corpus = os.listdir(self.corpus_dir)
+    print('for some other test, RESULTING listdir is ' + str(corpus))
     self.assertEqual(4, len(corpus))
     self.assertItemsEqual([
         '39e0574a4abfd646565a3e436c548eeb1684fb57',
@@ -277,7 +285,7 @@ class CorpusPruningTestFuchsia(unittest.TestCase, BaseTest):
         platform='FUCHSIA',
         environment_string=env_string).put()
     data_types.FuzzTarget(
-        binary='example_fuzzers/overflow_fuzzer',
+        binary='example_fuzzers/trap_fuzzer',
         engine='libFuzzer',
         project='fuchsia').put()
 
@@ -285,20 +293,22 @@ class CorpusPruningTestFuchsia(unittest.TestCase, BaseTest):
     helpers.patch(self, [
         'system.shell.clear_temp_directory',
     ])
+    # When this line is added in, there's a complaing that TEST_DIR/corpus already exists.
+    #shutil.copytree(os.path.join(TEST_DIR, 'corpus'), self.corpus_dir)
 
   def tearDown(self):
     shutil.rmtree(self.temp_dir, ignore_errors=True)
 
   def test_prune(self):
     """Basic pruning test."""
-    print('!!!!!!!! corpus dir is ' + self.corpus_dir)
-    corpus = os.listdir(self.corpus_dir)
-    print('LISTDIR2 IS ' + str(corpus))
+    print('!!!!!!!! corpus dir is ' + self.fuchsia_corpus_dir)
+    corpus = os.listdir(self.fuchsia_corpus_dir)
+    print('LISTDIR2 IS PRE-TASK IS' + str(corpus))
     #import time
     #time.sleep(6000)
 
     corpus_pruning_task.execute_task(
-        'libFuzzer_fuchsia_example_fuzzers-overflow_fuzzer',
+        'libFuzzer_fuchsia_example_fuzzers-trap_fuzzer',
         'libfuzzer_asan_fuchsia')
 
     #quarantined = os.listdir(self.quarantine_dir)
@@ -307,62 +317,23 @@ class CorpusPruningTestFuchsia(unittest.TestCase, BaseTest):
     #                 'crash-7acd6a2b3fe3c5ec97fa37e5a980c106367491fa')
 
     corpus = os.listdir(self.corpus_dir)
-    print('LISTDIR2 IS ' + str(corpus))
-    self.assertEqual(4, len(corpus))
+    print('LISTDIR2 POST-TASK IS ' + str(corpus))
+    print('LISTDIR2 FUCHSIA POST-TASK IS ' + str(os.listdir(self.fuchsia_corpus_dir)))
+    self.assertEqual(3, len(corpus))
     self.assertItemsEqual([
-        '39e0574a4abfd646565a3e436c548eeb1684fb57',
-        '7d157d7c000ae27db146575c08ce30df893d3a64',
+        '253420c1158bc6382093d409ce2e9cff5806e980',
+        '7acd6a2b3fe3c5ec97fa37e5a980c106367491fa',
         '31836aeaab22dc49555a97edb4c753881432e01d',
-        '6fa8c57336628a7d733f684dc9404fbd09020543',
     ], corpus)
 
     testcases = list(data_types.Testcase.query())
-    self.assertEqual(1, len(testcases))
-    self.assertEqual('Null-dereference WRITE', testcases[0].crash_type)
-    self.assertEqual('Foo\ntest_fuzzer.cc\n', testcases[0].crash_state)
-    self.assertEqual(1337, testcases[0].crash_revision)
-    self.assertEqual('test_fuzzer',
-                     testcases[0].get_metadata('fuzzer_binary_name'))
+    self.assertEqual(0, len(testcases))
+    #self.assertEqual('Null-dereference WRITE', testcases[0].crash_type)
+    #self.assertEqual('Foo\ntest_fuzzer.cc\n', testcases[0].crash_state)
+    #self.assertEqual(1337, testcases[0].crash_revision)
+    #self.assertEqual('test_fuzzer',
+    #                 testcases[0].get_metadata('fuzzer_binary_name'))
 
-    today = datetime.datetime.utcnow().date()
-    # get_coverage_information on test_fuzzer rather than libFuzzer_test_fuzzer
-    # since the libfuzzer_ prefix is removed when saving coverage info.
-    coverage_info = data_handler.get_coverage_information('test_fuzzer', today)
-
-    self.assertDictEqual(
-        {
-            'corpus_backup_location':
-                u'backup_link',
-            'corpus_location':
-                u'gs://bucket/libFuzzer/test_fuzzer/',
-            'corpus_size_bytes':
-                8,
-            'corpus_size_units':
-                4,
-            'date':
-                today,
-            # Coverage numbers are expected to be None as they come from fuzzer
-            # coverage cron task (see src/go/server/cron/coverage.go).
-            'edges_covered':
-                None,
-            'edges_total':
-                None,
-            'functions_covered':
-                None,
-            'functions_total':
-                None,
-            'fuzzer':
-                u'test_fuzzer',
-            'html_report_url':
-                None,
-            'quarantine_location':
-                u'gs://bucket-quarantine/libFuzzer/test_fuzzer/',
-            'quarantine_size_bytes':
-                2,
-            'quarantine_size_units':
-                1,
-        },
-        coverage_info.to_dict())
 
     self.assertEqual(self.mock.unpack_seed_corpus_if_needed.call_count, 1)
 
@@ -545,12 +516,20 @@ class CorpusPruningTestUntrusted(
   def test_prune(self):
     """Test pruning."""
     self._setup_env(job_type='libfuzzer_asan_job')
+    with open('/usr/local/google/home/flowerhack/test1.txt', 'a+') as f:
+        f.write('!!!!!!!! for some other test, corpus dir is ' + self.corpus_dir)
+    self.assertEqual(self.corpus_dir, 'aihgleia')
+    corpus = os.listdir(self.corpus_dir)
+    with open('/usr/local/google/home/flowerhack/test1.txt', 'a+') as f:
+        f.write('for some other test, listdir is ' + str(corpus))
     corpus_pruning_task.execute_task('libFuzzer_test_fuzzer',
                                      'libfuzzer_asan_job')
 
     corpus_dir = os.path.join(self.temp_dir, 'corpus')
     os.mkdir(corpus_dir)
     self.corpus.rsync_to_disk(corpus_dir)
+    with open('/usr/local/google/home/flowerhack/test1.txt', 'a+') as f:
+        f.write('LISTDIR2 POST-TASK IS ' + str(corpus))
 
     self.assertItemsEqual([
         '39e0574a4abfd646565a3e436c548eeb1684fb57',
